@@ -6,6 +6,7 @@ function Homepage() {
   const [theme, setTheme] = useState(
     localStorage.getItem("theme") ? localStorage.getItem("theme") : "light"
   );
+  const url="/bg-maybe.png"
   const element = document.documentElement;
   useEffect(() => {
     if (theme === "dark") {
@@ -20,16 +21,17 @@ function Homepage() {
   }, [theme]);
   return (
     <>
-      <div class="absolute dark:bg-[#212231] top-0 z-[-2] h-screen w-screen bg-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(160,175,183,0.5),rgba(255,255,255,0))]"></div>
+    <div className="min-h-screen bg-[url] bg-cover bg-center">
       <div className="flex flex-col items-center justify-center h-screen font-poppins ">
-        <span className="inline-flex animate-text-gradient bg-gradient-to-r from-[#aac2d8] via-[#738fa7] to-[#b7d0e6] bg-[200%_auto] bg-clip-text text-3xl font-bold text-transparent">
+        <span className="inline-flex animate-text-gradient bg-gradient-to-r from-[#aac2d8] via-[#738fa7] to-[#b7d0e6] bg-[200%_auto] bg-clip-text text-5xl pb-3 font-bold text-transparent">
           Students Feedback System
         </span>
         <div className="text-lg text-[#a3a3a3]">
           <p>Feedback that drives change</p>
         </div>
-        <p className="mt-4 mb-1 dark:text-slate-200">Login as</p>
-        <div className="flex flex-row items-center gap-2">
+        <p className="mt-4 mb-1 dark:text-slate-200 pb-3">Login as</p>
+        
+        <div className="flex flex-row items-center gap-2 ">
           <a href="/login">
             <button className="py-1.5 px-5 text-xl flex flex-row justify-center items-center gap-2 rounded-full font-bold dark:text-[#a6c7e5] dark:hover:text-white  text-[#738fa7] border border-[#738fa7] hover:bg-[#5b7e9c] hover:text-white">
               <div>
@@ -44,6 +46,7 @@ function Homepage() {
             </button>
           </a>
         </div>
+         
         <div className="absolute bottom-8 right-6 text-xl md:right-6 ">
           <label className="swap swap-rotate">
             {/* this hidden checkbox controls the state */}
@@ -74,7 +77,11 @@ function Homepage() {
               </svg>
             )}
           </label>
+      
+
         </div>
+          
+      </div>
       </div>
     </>
   );

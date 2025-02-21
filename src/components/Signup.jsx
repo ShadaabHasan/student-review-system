@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
-
+import { auth, db } from "../firebaseConfig"; 
+import { createUserWithEmailAndPassword } from "firebase/auth"; 
+import { doc, setDoc } from "firebase/firestore"; 
+import { useNavigate } from "react-router-dom"; 
 import { useForm } from "react-hook-form";
+
 
 function Signup() {
   const {
@@ -9,7 +13,30 @@ function Signup() {
     getValues,
     formState: { errors },
   } = useForm();
-  const onSubmit = (data) => console.log(data);
+
+  const navigate = useNavigate();
+
+  const onSubmit = async (data) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+  
+      await setDoc(doc(db, "users", user.uid), {
+        name: data.name,
+        email: data.email,
+        role: data.role, 
+        createdAt: new Date(),
+      });
+  
+      console.log("User created:", user);
+      alert("Signup successful!");
+  
+    } catch (error) {
+      console.error("Error signing up:", error.message);
+      alert(error.message);
+    }
+  };
+
   const password = getValues("password");
   const [theme, setTheme] = useState(
     localStorage.getItem("theme") ? localStorage.getItem("theme") : "light"
@@ -29,15 +56,27 @@ function Signup() {
 
   return (
     <>
-      <div class="min-h-screen dark:bg-[#212231] bg-gray-100 flex flex-col items-center justify-center p-2">
-        <div class="max-w-lg w-full bg-white dark:bg-slate-200 rounded-xl shadow-lg p-6">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">
-            Sign in
+      <div class="min-h-screen dark:bg-[#193341] bg-gray-100 flex flex-col items-center justify-center p-2">
+        <div class="max-w-lg w-full bg-gray-800 dark:bg-[273444] rounded-xl shadow-lg p-6">
+          <h2 class="text-2xl font-bold text-white mb-6 text-center">
+            Sign up
           </h2>
 
           <form class="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Role</label>
+            <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+              {...register("role", { required: true })}>
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+            </select>
+            {errors.role && (
+              <span className="text-sm text-red-500">This field is required</span>
+            )}
+          </div>
+
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-300 mb-1">
                 Name
               </label>
               <input
@@ -48,7 +87,7 @@ function Signup() {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-300 mb-1">
                 Email
               </label>
               <input
@@ -77,13 +116,13 @@ function Signup() {
               )}
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-300 mb-1">
                 Password
               </label>
               <input
                 type="password"
-                class="w-full px-4 py-1 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
-                placeholder="••••••••"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+                placeholder="Enter password"
                 {...register("password", { required: true })}
               />
               <br />
@@ -94,13 +133,13 @@ function Signup() {
               )}
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-300 mb-1">
                 Confirm Password
               </label>
               <input
                 type="password"
-                class="w-full px-4 py-1 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
-                placeholder="••••••••"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+                placeholder="Confirm Password"
                 {...register("cpassword", {
                   validate: (value) =>
                     password === value || "Passwords should match!",
@@ -114,16 +153,16 @@ function Signup() {
               )}
             </div>
 
-            <button class="w-full bg-[#5b7e9c] hover:bg-[#445e75] text-white font-medium py-2.5 mt-2 rounded-lg transition-colors">
+            <button class="w-full bg-[#1e1ea3] hover:bg-[#445e75] text-white font-medium py-2.5 rounded-lg transition-colors">
               Sign up
             </button>
           </form>
 
-          <div class="mt-2 text-center text-sm text-gray-600">
+          <div class="mt-2 text-center text-sm text-gray-300">
             Already have an account?
             <a
               href="/login"
-              class="text-[#5b7e9c] hover:text-[#4b6982] font-bold m-1"
+              class="text-[#f9f9f9] hover:text-[#4b6982] font-bold m-1"
             >
               Log in
             </a>

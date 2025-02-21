@@ -1,12 +1,28 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
+import { auth } from "../firebaseConfig"
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebaseConfig"; 
+
 
 function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  // const { register, handleSubmit, formState: { errors } } = useForm();
+  const [errorMessage, setErrorMessage] = useState("");
+
+
   const [theme, setTheme] = useState(
     localStorage.getItem("theme") ? localStorage.getItem("theme") : "light"
   );
+
   const element = document.documentElement;
+  
   useEffect(() => {
     if (theme === "dark") {
       element.classList.add("dark");
@@ -18,23 +34,47 @@ function Login() {
       document.body.classList.remove("dark");
     }
   }, [theme]);
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm();
-  const onSubmit = (data) => console.log(data);
+
+  const {register, handleSubmit, formState: { errors },} = useForm();
+
+  const handleLogin = async (e) => {
+    e.preventDefault(); // Prevent form reload
+    
+    const email = e.target.email.value; // Get email input value
+    const password = e.target.password.value; // Get password input value
+  
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+  
+      // Fetch user role from Firestore
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const role = userDoc.data().role;
+        console.log("Logged in as:", role);
+  
+        if (role === "teacher") {
+          window.location.href = "/teacherdashboard";
+        } else {
+          window.location.href = "/studentdashboard";
+        }
+      }
+    } catch (error) {
+      console.error("Login error:", error.message);
+      alert("Invalid credentials.");
+    }
+  };
   return (
     <>
-      <div class="min-h-screen dark:bg-[#212231] bg-gray-100 flex flex-col items-center justify-center p-4">
-        <div class="max-w-md w-full bg-white dark:bg-slate-200 rounded-xl shadow-lg p-8">
-          <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">
+      <div class="min-h-screen dark:bg-[#193341] bg-gray-100 flex flex-col items-center justify-center p-4">
+        <div class="max-w-md w-full bg-gray-800 dark:bg-[273444] rounded-xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 text-center">
             Login
           </h2>
 
-          <form class="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+          <form class="space-y-4" onSubmit={handleLogin}>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-300 mb-1">
                 Email
               </label>
               <input
@@ -63,13 +103,13 @@ function Login() {
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">
+              <label class="block text-sm font-medium text-gray-300 mb-1">
                 Password
               </label>
               <input
                 type="password"
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
-                placeholder="••••••••"
+                placeholder="Enter Password"
                 {...register("password", { required: true })}
               />
               <br />
@@ -81,21 +121,21 @@ function Login() {
             </div>
 
             <div class="flex items-center justify-between">
-              <a href="#" class="text-sm text-[#6488a8]">
+              <a href="#" class="text-sm text-[#8ab6dc]">
                 Forgot password?
               </a>
             </div>
 
-            <button class="w-full bg-[#5b7e9c] hover:bg-[#445e75] text-white font-medium py-2.5 rounded-lg transition-colors">
+            <button class="w-full bg-[#1e1ea3] hover:bg-[#445e75] text-white font-medium py-2.5 rounded-lg transition-colors">
               Login
             </button>
           </form>
 
-          <div class="mt-6 text-center text-sm text-gray-600">
+          <div class="mt-6 text-center text-sm text-gray-300">
             Don't have an account?
             <a
               href="/signup"
-              class="text-[#5b7e9c] hover:text-[#4b6982] font-bold m-1"
+              class="text-[#6b93b7] hover:text-[#4b6982] font-bold m-1"
             >
               Sign up
             </a>
