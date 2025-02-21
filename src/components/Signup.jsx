@@ -39,7 +39,7 @@ function Signup() {
 
   const password = getValues("password");
   const [theme, setTheme] = useState(
-    localStorage.getItem("theme") ? localStorage.getItem("theme") : "light"
+    localStorage.getItem("theme") ? localStorage.getItem("theme") : "dark"
   );
   const element = document.documentElement;
   useEffect(() => {
