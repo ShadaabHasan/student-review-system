@@ -66,7 +66,7 @@ function Signup() {
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
                 placeholder="Your name"
                 {...register("name", { required: false })}
               />
@@ -78,7 +78,7 @@ function Signup() {
               <input
                 name="email"
                 type="email"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
                 placeholder="your@email.com"
                 {...register("email", {
                   required: true,
@@ -106,7 +106,7 @@ function Signup() {
               </label>
               <input
                 type="password"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
                 placeholder="Enter password"
                 {...register("password", { required: true })}
               />
@@ -123,7 +123,7 @@ function Signup() {
               </label>
               <input
                 type="password"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
                 placeholder="Confirm Password"
                 {...register("cpassword", {
                   validate: (value) =>

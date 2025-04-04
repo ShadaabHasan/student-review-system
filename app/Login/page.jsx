@@ -38,9 +38,9 @@ function Login() {
         console.log("Logged in as:", role);
   
         if (role === "teacher") {
-          window.location.href = "/teacherdashboard";
+          window.location.href = "/Dashboard/Teacher";
         } else {
-          window.location.href = "/studentdashboard";
+          window.location.href = "/Dashboard/Student";
         }
       }
     } catch (error) {
@@ -63,7 +63,7 @@ function Login() {
               </label>
               <input
                 type="email"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-300 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-300 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
                 placeholder="your@email.com"
                 {...register("email", {
                   required: true,
@@ -92,7 +92,7 @@ function Login() {
               </label>
               <input
                 type="password"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-300 rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
+                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-300 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
                 placeholder="Enter Password"
                 {...register("password", { required: true })}
               />
