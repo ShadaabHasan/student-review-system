@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from "react";
-import { auth, db } from "../firebaseConfig"; 
+import { auth, db } from "../../lib/firebaseConfig"; 
 import { createUserWithEmailAndPassword } from "firebase/auth"; 
 import { doc, setDoc } from "firebase/firestore"; 
 import { useForm } from "react-hook-form";
@@ -146,7 +146,7 @@ function Signup() {
           <div className="mt-2 text-center text-sm text-white">
             Already have an account?
             <a
-              href="/login"
+              href="/Login"
               className="text-[#f9f9f9] hover:text-[#4b6982] font-bold m-1"
             >
               Log in

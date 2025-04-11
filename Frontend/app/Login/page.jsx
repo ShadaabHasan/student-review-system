@@ -3,11 +3,11 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
-import { auth } from "../firebaseConfig"
+import { auth } from "../../lib/firebaseConfig"
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebaseConfig"; 
+import { db } from "../../lib/firebaseConfig"; 
 
 
 function Login() {

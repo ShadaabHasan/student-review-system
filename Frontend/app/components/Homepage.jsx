@@ -7,7 +7,7 @@ import { PiStudentFill } from "react-icons/pi";
 function Homepage() {
   return (
     <>
-    <div className="min-h-screen bg-indigo-950 bg-cover bg-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 bg-cover bg-center">
       <div className="flex flex-col items-center justify-center h-screen font-poppins ">
         <span className="inline-flex animate-text-gradient bg-gradient-to-r from-[#aac2d8] via-[#738fa7] to-[#b7d0e6] bg-[200%_auto] bg-clip-text text-5xl pb-3 font-bold text-transparent">
           Students Feedback System
