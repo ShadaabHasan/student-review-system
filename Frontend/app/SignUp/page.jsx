@@ -1,169 +1,216 @@
-'use client'
+"use client"
 
-import React, { useEffect, useState } from "react";
-import { auth, db } from "../../lib/firebaseConfig"; 
-import { createUserWithEmailAndPassword } from "firebase/auth"; 
-import { doc, setDoc } from "firebase/firestore"; 
-import { useForm } from "react-hook-form";
+import { useState } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { GraduationCap, Users } from "lucide-react"
 
+export default function SignupPage() {
+  const [studentForm, setStudentForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    year: "",
+    course: "",
+  })
+  const [teacherForm, setTeacherForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    department: "",
+    subjects: "",
+  })
 
-function Signup() {
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors },
-  } = useForm();
+  const handleStudentSignup = (e) => {
+    e.preventDefault()
+    // Mock signup - redirect to login
+    window.location.href = "/login"
+  }
 
-  const onSubmit = async (data) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      const user = userCredential.user;
-  
-      await setDoc(doc(db, "users", user.uid), {
-        name: data.name,
-        email: data.email,
-        role: data.role, 
-        createdAt: new Date(),
-      });
-  
-      console.log("User created:", user);
-      alert("Signup successful!");
-  
-    } catch (error) {
-      console.error("Error signing up:", error.message);
-      alert(error.message);
-    }
-  };
+  const handleTeacherSignup = (e) => {
+    e.preventDefault()
+    // Mock signup - redirect to login
+    window.location.href = "/login"
+  }
 
-  const password = getValues("password");
-  // const element = document.documentElement;
-  
   return (
-    <>
-      <div className="min-h-screen dark:bg-[#193341] bg-gray-100 flex flex-col items-center justify-center p-2">
-        <div className="max-w-lg w-full bg-gray-800 dark:bg-[273444] rounded-xl shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-white mb-6 text-center">
-            Sign up
-          </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+          <CardDescription>Join our educational feedback system</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="student" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="student" className="flex items-center gap-2">
+                <GraduationCap className="w-4 h-4" />
+                Student
+              </TabsTrigger>
+              <TabsTrigger value="teacher" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Teacher
+              </TabsTrigger>
+            </TabsList>
 
-          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <label className="block text-sm font-medium text-white mb-1">Role</label>
-            <select className="w-full px-4 py-2 border border-gray-300 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
-              {...register("role", { required: true })}>
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-            </select>
-            {errors.role && (
-              <span className="text-sm text-red-500">This field is required</span>
-            )}
+            <TabsContent value="student">
+              <form onSubmit={handleStudentSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="student-name">Full Name</Label>
+                  <Input
+                    id="student-name"
+                    placeholder="John Doe"
+                    value={studentForm.name}
+                    onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="student-email">Email</Label>
+                  <Input
+                    id="student-email"
+                    type="email"
+                    placeholder="student@university.edu"
+                    value={studentForm.email}
+                    onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="year">Year</Label>
+                    <Select onValueChange={(value) => setStudentForm({ ...studentForm, year: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1st Year</SelectItem>
+                        <SelectItem value="2">2nd Year</SelectItem>
+                        <SelectItem value="3">3rd Year</SelectItem>
+                        <SelectItem value="4">4th Year</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="course">Course</Label>
+                    <Select onValueChange={(value) => setStudentForm({ ...studentForm, course: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cse">Computer Science</SelectItem>
+                        <SelectItem value="ece">Electronics</SelectItem>
+                        <SelectItem value="me">Mechanical</SelectItem>
+                        <SelectItem value="ce">Civil</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="student-password">Password</Label>
+                  <Input
+                    id="student-password"
+                    type="password"
+                    value={studentForm.password}
+                    onChange={(e) => setStudentForm({ ...studentForm, password: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="student-confirm">Confirm Password</Label>
+                  <Input
+                    id="student-confirm"
+                    type="password"
+                    value={studentForm.confirmPassword}
+                    onChange={(e) => setStudentForm({ ...studentForm, confirmPassword: e.target.value })}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  Create Student Account
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="teacher">
+              <form onSubmit={handleTeacherSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="teacher-name">Full Name</Label>
+                  <Input
+                    id="teacher-name"
+                    placeholder="Dr. Jane Smith"
+                    value={teacherForm.name}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="teacher-email">Email</Label>
+                  <Input
+                    id="teacher-email"
+                    type="email"
+                    placeholder="teacher@university.edu"
+                    value={teacherForm.email}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Department</Label>
+                  <Select onValueChange={(value) => setTeacherForm({ ...teacherForm, department: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cse">Computer Science</SelectItem>
+                      <SelectItem value="ece">Electronics</SelectItem>
+                      <SelectItem value="me">Mechanical</SelectItem>
+                      <SelectItem value="ce">Civil</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="teacher-password">Password</Label>
+                  <Input
+                    id="teacher-password"
+                    type="password"
+                    value={teacherForm.password}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, password: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="teacher-confirm">Confirm Password</Label>
+                  <Input
+                    id="teacher-confirm"
+                    type="password"
+                    value={teacherForm.confirmPassword}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, confirmPassword: e.target.value })}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full">
+                  Create Teacher Account
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+
+          <div className="mt-6 text-center text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-600 hover:underline">
+              Sign in
+            </Link>
           </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
-                placeholder="Your name"
-                {...register("name", { required: false })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white mb-1">
-                Email
-              </label>
-              <input
-                name="email"
-                type="email"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
-                placeholder="your@email.com"
-                {...register("email", {
-                  required: true,
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address",
-                  },
-                })}
-              />
-              <br />
-              {errors.email && errors.email.type === "required" && (
-                <span className="text-sm text-red-500">
-                  This field is required
-                </span>
-              )}
-              {errors.email && errors.email.type === "pattern" && (
-                <span className="text-sm text-red-500">
-                  This email is not valid.
-                </span>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
-                placeholder="Enter password"
-                {...register("password", { required: true })}
-              />
-              <br />
-              {errors.password && (
-                <span className="text-sm text-red-500">
-                  This field is required
-                </span>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-white mb-1">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                className="w-full px-4 py-2 border border-gray-300 placeholder-gray-400 text-white rounded-lg focus:ring-1 focus:ring-[#738fa7] focus:border-[#738fa7] outline-none transition-all"
-                placeholder="Confirm Password"
-                {...register("cpassword", {
-                  validate: (value) =>
-                    password === value || "Passwords should match!",
-                })}
-              />
-              <br />
-              {errors.cpassword && (
-                <span className="text-sm text-red-500">
-                  {errors.cpassword.message}
-                </span>
-              )}
-            </div>
-
-            <button className="w-full bg-[#1e1ea3] hover:bg-[#445e75] text-white font-medium py-2.5 rounded-lg transition-colors">
-              Sign up
-            </button>
-          </form>
-
-          <div className="mt-2 text-center text-sm text-white">
-            Already have an account?
-            <a
-              href="/Login"
-              className="text-[#f9f9f9] hover:text-[#4b6982] font-bold m-1"
-            >
-              Log in
-            </a>
-          </div>
-        </div>
-        <div>
-          <a
-            href="/"
-            className="font-md text-sm mt-2 underline dark:text-white"
-          >
-            Go back
-          </a>
-        </div>
-      </div>
-    </>
-  );
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
-
-export default Signup;
