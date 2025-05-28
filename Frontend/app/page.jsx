@@ -1,6 +1,6 @@
 import Link from "next/link"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { Button } from "./components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
 import { BookOpen, Users, BarChart3, MessageSquare, GraduationCap, TrendingUp } from "lucide-react"
 
 export default function HomePage() {
