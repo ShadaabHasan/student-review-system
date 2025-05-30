@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../../components/ui/chart"
+import { Button } from "../../../components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
+import { Badge } from "../../../components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../../../components/ui/chart"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 import { User, LogOut, TrendingUp, MessageSquare, Lightbulb, ChevronDown, ChevronUp } from "lucide-react"
 
