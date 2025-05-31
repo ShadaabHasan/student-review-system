@@ -34,12 +34,15 @@ export default function SignupPage() {
     try {
       await signup(name, email, password, role)
 
-      // Redirect based on role
-      if (role === "student") {
-        router.push("/student/dashboard")
-      } else {
-        router.push("/teacher/dashboard")
-      }
+      // Small delay to ensure user state is set
+      setTimeout(() => {
+        // Redirect based on role
+        if (role === "student") {
+          router.push("/student/dashboard")
+        } else {
+          router.push("/teacher/dashboard")
+        }
+      }, 100)
     } catch (err) {
       setError("Failed to create account")
     } finally {

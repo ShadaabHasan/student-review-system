@@ -1,9 +1,7 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-provider"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { mockFeedback } from "@/lib/auth-provider"
-import { Button } from "@/components/ui/button"
 
 // Simple pie chart component
 const SimplePieChart = ({ data }) => {
@@ -19,7 +17,7 @@ const SimplePieChart = ({ data }) => {
           justifyContent: "center",
         }}
       >
-        <p style={{ color: "hsl(var(--muted-foreground))" }}>No feedback data available</p>
+        <p className="text-muted">No feedback data available</p>
       </div>
     )
   }
@@ -72,7 +70,7 @@ const SimplePieChart = ({ data }) => {
                 backgroundColor: item.color,
               }}
             ></div>
-            <span style={{ fontSize: "0.875rem" }}>
+            <span className="text-sm">
               {item.name}: {item.value} ({total > 0 ? Math.round((item.value / total) * 100) : 0}%)
             </span>
           </div>
@@ -150,12 +148,12 @@ export default function TeacherDashboard() {
   const improvementSuggestions = generateSuggestions()
 
   return (
-    <div style={{ padding: "1.5rem" }}>
+    <div className="p-6">
       <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>Teacher Dashboard</h1>
 
       <div style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Welcome back, {user?.name}</h2>
-        <p style={{ color: "hsl(var(--muted-foreground))" }}>
+        <p className="text-muted">
           This is your dashboard where you can view student feedback and suggestions for improvement.
         </p>
       </div>
@@ -168,37 +166,37 @@ export default function TeacherDashboard() {
           gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
         }}
       >
-        <Card>
-          <CardHeader style={{ paddingBottom: "0.5rem" }}>
-            <CardTitle>Total Feedback</CardTitle>
-            <CardDescription>Feedback received from students</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Total Feedback</h3>
+            <p className="card-description">Feedback received from students</p>
+          </div>
+          <div className="card-content">
             <p style={{ fontSize: "1.875rem", fontWeight: "bold" }}>{teacherFeedback.length}</p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader style={{ paddingBottom: "0.5rem" }}>
-            <CardTitle>Average Rating</CardTitle>
-            <CardDescription>Your overall rating</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Average Rating</h3>
+            <p className="card-description">Your overall rating</p>
+          </div>
+          <div className="card-content">
             <p style={{ fontSize: "1.875rem", fontWeight: "bold" }}>{averageRating}/5</p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader style={{ paddingBottom: "0.5rem" }}>
-            <CardTitle>Positive Feedback</CardTitle>
-            <CardDescription>Percentage of positive feedback</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Positive Feedback</h3>
+            <p className="card-description">Percentage of positive feedback</p>
+          </div>
+          <div className="card-content">
             <p style={{ fontSize: "1.875rem", fontWeight: "bold" }}>
               {teacherFeedback.length > 0 ? `${Math.round((positiveFeedback / teacherFeedback.length) * 100)}%` : "N/A"}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <div
@@ -209,12 +207,12 @@ export default function TeacherDashboard() {
           gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
         }}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>Feedback Distribution</CardTitle>
-            <CardDescription>Breakdown of student feedback by sentiment</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Feedback Distribution</h3>
+            <p className="card-description">Breakdown of student feedback by sentiment</p>
+          </div>
+          <div className="card-content">
             <SimplePieChart
               data={[
                 { name: "Positive", value: positiveFeedback, color: "#10b981" },
@@ -222,15 +220,15 @@ export default function TeacherDashboard() {
                 { name: "Negative", value: negativeFeedback, color: "#ef4444" },
               ]}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Improvement Suggestions</CardTitle>
-            <CardDescription>Based on student feedback</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="card">
+          <div className="card-header">
+            <h3 className="card-title">Improvement Suggestions</h3>
+            <p className="card-description">Based on student feedback</p>
+          </div>
+          <div className="card-content">
             <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {improvementSuggestions.map((suggestion, index) => (
                 <li key={index} style={{ display: "flex", alignItems: "flex-start" }}>
@@ -244,10 +242,10 @@ export default function TeacherDashboard() {
                       alignItems: "center",
                       justifyContent: "center",
                       borderRadius: "50%",
-                      backgroundColor: "hsl(var(--primary) / 0.1)",
+                      backgroundColor: "rgba(30, 41, 59, 0.1)",
                       fontSize: "0.875rem",
                       fontWeight: "500",
-                      color: "hsl(var(--primary))",
+                      color: "var(--primary)",
                     }}
                   >
                     {index + 1}
@@ -256,8 +254,8 @@ export default function TeacherDashboard() {
                 </li>
               ))}
             </ul>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Recent Feedback</h2>
@@ -269,9 +267,9 @@ export default function TeacherDashboard() {
           gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
         }}
       >
-        <Card>
-          <CardHeader style={{ backgroundColor: "rgb(236 253 245)", padding: "1rem" }}>
-            <CardTitle style={{ display: "flex", alignItems: "center", color: "#059669" }}>
+        <div className="card">
+          <div className="card-header" style={{ backgroundColor: "#f0fdf4" }}>
+            <h3 className="card-title" style={{ display: "flex", alignItems: "center", color: "#059669" }}>
               <div
                 style={{
                   marginRight: "0.5rem",
@@ -282,60 +280,36 @@ export default function TeacherDashboard() {
                 }}
               ></div>
               Positive Feedback
-            </CardTitle>
-            <CardDescription>Recent positive comments from students</CardDescription>
-          </CardHeader>
-          <CardContent style={{ padding: 0 }}>
+            </h3>
+            <p className="card-description">Recent positive comments from students</p>
+          </div>
+          <div className="card-content" style={{ padding: 0 }}>
             {recentPositive.length > 0 ? (
-              <ul style={{ borderTop: "1px solid hsl(var(--border))" }}>
+              <ul>
                 {recentPositive.map((feedback) => (
-                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid hsl(var(--border))" }}>
+                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
                     <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedback.comment}</p>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          borderRadius: "9999px",
-                          backgroundColor: "#dcfce7",
-                          padding: "0.125rem 0.625rem",
-                          fontSize: "0.75rem",
-                          fontWeight: "500",
-                          color: "#166534",
-                        }}
-                      >
-                        Rating: {feedback.rating}/5
-                      </div>
-                      <span style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
-                        {feedback.date}
-                      </span>
+                      <div className="badge badge-positive">Rating: {feedback.rating}/5</div>
+                      <span className="text-muted text-sm">{feedback.date}</span>
                     </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p
-                style={{
-                  padding: "1rem",
-                  textAlign: "center",
-                  fontSize: "0.875rem",
-                  color: "hsl(var(--muted-foreground))",
-                }}
-              >
-                No positive feedback yet
-              </p>
+              <p className="p-4 text-center text-muted text-sm">No positive feedback yet</p>
             )}
-          </CardContent>
-          <div style={{ borderTop: "1px solid hsl(var(--border))", padding: "1rem" }}>
-            <Button variant="outline" style={{ width: "100%" }} disabled={recentPositive.length === 0}>
-              View All Positive Feedback
-            </Button>
           </div>
-        </Card>
+          <div className="card-footer">
+            <button className="btn btn-outline btn-block" disabled={recentPositive.length === 0}>
+              View All Positive Feedback
+            </button>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader style={{ backgroundColor: "rgb(249 250 251)", padding: "1rem" }}>
-            <CardTitle style={{ display: "flex", alignItems: "center", color: "#6b7280" }}>
+        <div className="card">
+          <div className="card-header" style={{ backgroundColor: "#f9fafb" }}>
+            <h3 className="card-title" style={{ display: "flex", alignItems: "center", color: "#6b7280" }}>
               <div
                 style={{
                   marginRight: "0.5rem",
@@ -346,60 +320,36 @@ export default function TeacherDashboard() {
                 }}
               ></div>
               Neutral Feedback
-            </CardTitle>
-            <CardDescription>Recent neutral comments from students</CardDescription>
-          </CardHeader>
-          <CardContent style={{ padding: 0 }}>
+            </h3>
+            <p className="card-description">Recent neutral comments from students</p>
+          </div>
+          <div className="card-content" style={{ padding: 0 }}>
             {recentNeutral.length > 0 ? (
-              <ul style={{ borderTop: "1px solid hsl(var(--border))" }}>
+              <ul>
                 {recentNeutral.map((feedback) => (
-                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid hsl(var(--border))" }}>
+                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
                     <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedback.comment}</p>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          borderRadius: "9999px",
-                          backgroundColor: "#f3f4f6",
-                          padding: "0.125rem 0.625rem",
-                          fontSize: "0.75rem",
-                          fontWeight: "500",
-                          color: "#374151",
-                        }}
-                      >
-                        Rating: {feedback.rating}/5
-                      </div>
-                      <span style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
-                        {feedback.date}
-                      </span>
+                      <div className="badge badge-neutral">Rating: {feedback.rating}/5</div>
+                      <span className="text-muted text-sm">{feedback.date}</span>
                     </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p
-                style={{
-                  padding: "1rem",
-                  textAlign: "center",
-                  fontSize: "0.875rem",
-                  color: "hsl(var(--muted-foreground))",
-                }}
-              >
-                No neutral feedback yet
-              </p>
+              <p className="p-4 text-center text-muted text-sm">No neutral feedback yet</p>
             )}
-          </CardContent>
-          <div style={{ borderTop: "1px solid hsl(var(--border))", padding: "1rem" }}>
-            <Button variant="outline" style={{ width: "100%" }} disabled={recentNeutral.length === 0}>
-              View All Neutral Feedback
-            </Button>
           </div>
-        </Card>
+          <div className="card-footer">
+            <button className="btn btn-outline btn-block" disabled={recentNeutral.length === 0}>
+              View All Neutral Feedback
+            </button>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader style={{ backgroundColor: "rgb(254 242 242)", padding: "1rem" }}>
-            <CardTitle style={{ display: "flex", alignItems: "center", color: "#dc2626" }}>
+        <div className="card">
+          <div className="card-header" style={{ backgroundColor: "#fef2f2" }}>
+            <h3 className="card-title" style={{ display: "flex", alignItems: "center", color: "#dc2626" }}>
               <div
                 style={{
                   marginRight: "0.5rem",
@@ -410,56 +360,32 @@ export default function TeacherDashboard() {
                 }}
               ></div>
               Negative Feedback
-            </CardTitle>
-            <CardDescription>Recent negative comments from students</CardDescription>
-          </CardHeader>
-          <CardContent style={{ padding: 0 }}>
+            </h3>
+            <p className="card-description">Recent negative comments from students</p>
+          </div>
+          <div className="card-content" style={{ padding: 0 }}>
             {recentNegative.length > 0 ? (
-              <ul style={{ borderTop: "1px solid hsl(var(--border))" }}>
+              <ul>
                 {recentNegative.map((feedback) => (
-                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid hsl(var(--border))" }}>
+                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
                     <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedback.comment}</p>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          borderRadius: "9999px",
-                          backgroundColor: "#fee2e2",
-                          padding: "0.125rem 0.625rem",
-                          fontSize: "0.75rem",
-                          fontWeight: "500",
-                          color: "#991b1b",
-                        }}
-                      >
-                        Rating: {feedback.rating}/5
-                      </div>
-                      <span style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
-                        {feedback.date}
-                      </span>
+                      <div className="badge badge-negative">Rating: {feedback.rating}/5</div>
+                      <span className="text-muted text-sm">{feedback.date}</span>
                     </div>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p
-                style={{
-                  padding: "1rem",
-                  textAlign: "center",
-                  fontSize: "0.875rem",
-                  color: "hsl(var(--muted-foreground))",
-                }}
-              >
-                No negative feedback yet
-              </p>
+              <p className="p-4 text-center text-muted text-sm">No negative feedback yet</p>
             )}
-          </CardContent>
-          <div style={{ borderTop: "1px solid hsl(var(--border))", padding: "1rem" }}>
-            <Button variant="outline" style={{ width: "100%" }} disabled={recentNegative.length === 0}>
-              View All Negative Feedback
-            </Button>
           </div>
-        </Card>
+          <div className="card-footer">
+            <button className="btn btn-outline btn-block" disabled={recentNegative.length === 0}>
+              View All Negative Feedback
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )

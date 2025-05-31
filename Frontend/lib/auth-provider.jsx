@@ -250,10 +250,11 @@ export function AuthProvider({ children }) {
         }
 
         if (foundUser) {
-          const { password, ...userWithoutPassword } = foundUser
+          const { password: _, ...userWithoutPassword } = foundUser
           setUser(userWithoutPassword)
           localStorage.setItem("user", JSON.stringify(userWithoutPassword))
-          resolve()
+          // Ensure state is updated before resolving
+          setTimeout(() => resolve(), 50)
         } else {
           reject(new Error("Invalid credentials"))
         }
@@ -292,7 +293,8 @@ export function AuthProvider({ children }) {
         const { password: _, ...userWithoutPassword } = newUser
         setUser(userWithoutPassword)
         localStorage.setItem("user", JSON.stringify(userWithoutPassword))
-        resolve()
+        // Ensure state is updated before resolving
+        setTimeout(() => resolve(), 50)
       }, 1000)
     })
   }

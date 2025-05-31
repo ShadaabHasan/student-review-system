@@ -1,22 +1,30 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-provider"
-import { Loader2 } from "lucide-react"
 import { TeacherSidebar } from "@/components/teacher-sidebar"
 
 export default function TeacherLayout({ children }) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const [shouldRedirect, setShouldRedirect] = useState(false)
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "teacher")) {
-      router.push("/login")
+    if (!isLoading) {
+      if (!user || user.role !== "teacher") {
+        setShouldRedirect(true)
+        const timer = setTimeout(() => {
+          router.push("/login")
+        }, 100)
+        return () => clearTimeout(timer)
+      } else {
+        setShouldRedirect(false)
+      }
     }
   }, [user, isLoading, router])
 
-  if (isLoading || !user) {
+  if (isLoading || shouldRedirect) {
     return (
       <div
         style={{
@@ -26,11 +34,13 @@ export default function TeacherLayout({ children }) {
           justifyContent: "center",
         }}
       >
-        <Loader2
-          style={{ height: "2rem", width: "2rem", animation: "spin 1s linear infinite", color: "hsl(var(--primary))" }}
-        />
+        <div className="spinner"></div>
       </div>
     )
+  }
+
+  if (!user || user.role !== "teacher") {
+    return null
   }
 
   return (

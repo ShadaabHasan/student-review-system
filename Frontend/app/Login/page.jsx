@@ -22,12 +22,15 @@ export default function LoginPage() {
     try {
       await login(email, password, role)
 
-      // Redirect based on role
-      if (role === "student") {
-        router.push("/student/dashboard")
-      } else {
-        router.push("/teacher/dashboard")
-      }
+      // Small delay to ensure user state is set
+      setTimeout(() => {
+        // Redirect based on role
+        if (role === "student") {
+          router.push("/student/dashboard")
+        } else {
+          router.push("/teacher/dashboard")
+        }
+      }, 100)
     } catch (err) {
       setError("Invalid email or password")
     } finally {
