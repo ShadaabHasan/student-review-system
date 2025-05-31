@@ -1,245 +1,466 @@
 "use client"
 
-import { useState } from "react"
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
-import { User, LogOut, TrendingUp, MessageSquare, Lightbulb, ChevronDown, ChevronUp } from "lucide-react"
+import { useAuth } from "@/lib/auth-provider"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { mockFeedback } from "@/lib/auth-provider"
+import { Button } from "@/components/ui/button"
 
-const feedbackData = [
-  { name: "Positive", value: 65, color: "#22c55e" },
-  { name: "Neutral", value: 20, color: "#f59e0b" },
-  { name: "Negative", value: 15, color: "#ef4444" },
-]
+// Simple pie chart component
+const SimplePieChart = ({ data }) => {
+  const total = data.reduce((sum, item) => sum + item.value, 0)
 
-const recentComments = {
-  positive: [
-    {
-      id: 1,
-      comment: "Excellent teaching methodology and clear explanations",
-      date: "2024-01-15",
-      subject: "Data Structures",
-    },
-    { id: 2, comment: "Very engaging lectures with practical examples", date: "2024-01-14", subject: "Algorithms" },
-    {
-      id: 3,
-      comment: "Great use of visual aids and interactive sessions",
-      date: "2024-01-13",
-      subject: "Data Structures",
-    },
-    { id: 4, comment: "Always available for doubt clarification", date: "2024-01-12", subject: "Algorithms" },
-    { id: 5, comment: "Makes complex topics easy to understand", date: "2024-01-11", subject: "Data Structures" },
-  ],
-  neutral: [
-    { id: 6, comment: "Good teaching but could use more examples", date: "2024-01-15", subject: "Data Structures" },
-    { id: 7, comment: "Average pace, sometimes too fast", date: "2024-01-14", subject: "Algorithms" },
-    {
-      id: 8,
-      comment: "Content is good but delivery could be improved",
-      date: "2024-01-13",
-      subject: "Data Structures",
-    },
-    { id: 9, comment: "Satisfactory teaching methods", date: "2024-01-12", subject: "Algorithms" },
-    { id: 10, comment: "Decent explanations but room for improvement", date: "2024-01-11", subject: "Data Structures" },
-  ],
-  negative: [
-    {
-      id: 11,
-      comment: "Lectures are too fast-paced and hard to follow",
-      date: "2024-01-15",
-      subject: "Data Structures",
-    },
-    { id: 12, comment: "Not enough practical examples provided", date: "2024-01-14", subject: "Algorithms" },
-    { id: 13, comment: "Difficult to understand explanations", date: "2024-01-13", subject: "Data Structures" },
-    { id: 14, comment: "Limited interaction with students", date: "2024-01-12", subject: "Algorithms" },
-    { id: 15, comment: "Course material is not well organized", date: "2024-01-11", subject: "Data Structures" },
-  ],
+  if (total === 0) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          height: "300px",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p style={{ color: "hsl(var(--muted-foreground))" }}>No feedback data available</p>
+      </div>
+    )
+  }
+
+  let cumulativePercentage = 0
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        height: "300px",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div style={{ position: "relative", height: "192px", width: "192px" }}>
+        <svg style={{ height: "100%", width: "100%" }} viewBox="0 0 100 100">
+          {data.map((item, index) => {
+            const percentage = (item.value / total) * 100
+            const startAngle = (cumulativePercentage / 100) * 360
+            const endAngle = ((cumulativePercentage + percentage) / 100) * 360
+
+            const startAngleRad = (startAngle * Math.PI) / 180
+            const endAngleRad = (endAngle * Math.PI) / 180
+
+            const largeArcFlag = percentage > 50 ? 1 : 0
+
+            const x1 = 50 + 40 * Math.cos(startAngleRad)
+            const y1 = 50 + 40 * Math.sin(startAngleRad)
+            const x2 = 50 + 40 * Math.cos(endAngleRad)
+            const y2 = 50 + 40 * Math.sin(endAngleRad)
+
+            const pathData = [`M 50 50`, `L ${x1} ${y1}`, `A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2}`, "Z"].join(" ")
+
+            cumulativePercentage += percentage
+
+            return <path key={index} d={pathData} fill={item.color} stroke="white" strokeWidth="1" />
+          })}
+        </svg>
+      </div>
+      <div style={{ marginLeft: "1.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        {data.map((item, index) => (
+          <div key={index} style={{ display: "flex", alignItems: "center" }}>
+            <div
+              style={{
+                marginRight: "0.5rem",
+                height: "0.75rem",
+                width: "0.75rem",
+                borderRadius: "50%",
+                backgroundColor: item.color,
+              }}
+            ></div>
+            <span style={{ fontSize: "0.875rem" }}>
+              {item.name}: {item.value} ({total > 0 ? Math.round((item.value / total) * 100) : 0}%)
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default function TeacherDashboard() {
-  const [expandedCategory, setExpandedCategory] = useState(null)
-  const [tab, setTab] = useState("positive")
+  const { user } = useAuth()
 
-  const toggleCategory = (category) => {
-    setExpandedCategory(expandedCategory === category ? null : category)
+  // Filter feedback for this teacher
+  const teacherFeedback = mockFeedback.filter((f) => f.teacherId === user?.id)
+
+  // Count feedback by sentiment
+  const positiveFeedback = teacherFeedback.filter((f) => f.sentiment === "positive").length
+  const neutralFeedback = teacherFeedback.filter((f) => f.sentiment === "neutral").length
+  const negativeFeedback = teacherFeedback.filter((f) => f.sentiment === "negative").length
+
+  // Calculate average rating
+  const averageRating =
+    teacherFeedback.length > 0
+      ? (teacherFeedback.reduce((sum, f) => sum + f.rating, 0) / teacherFeedback.length).toFixed(1)
+      : "N/A"
+
+  // Get recent comments for each sentiment
+  const getRecentComments = (sentiment, limit = 5) => {
+    return teacherFeedback
+      .filter((f) => f.sentiment === sentiment)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, limit)
   }
 
-  const getSuggestions = () => [
-    "Consider slowing down the pace of lectures based on student feedback",
-    "Incorporate more practical examples and hands-on exercises",
-    "Improve explanation clarity by using visual aids and diagrams",
-    "Increase student interaction through Q&A sessions and discussions",
-    "Better organize course materials and provide structured notes",
-  ]
+  const recentPositive = getRecentComments("positive")
+  const recentNeutral = getRecentComments("neutral")
+  const recentNegative = getRecentComments("negative")
+
+  // Generate improvement suggestions based on negative feedback
+  const generateSuggestions = () => {
+    if (negativeFeedback === 0) {
+      return ["You're doing great! Keep up the good work."]
+    }
+
+    const suggestions = []
+
+    // Check for common themes in negative feedback
+    const negativeComments = teacherFeedback
+      .filter((f) => f.sentiment === "negative")
+      .map((f) => f.comment.toLowerCase())
+
+    if (negativeComments.some((c) => c.includes("fast") || c.includes("pace") || c.includes("quick"))) {
+      suggestions.push("Consider slowing down the pace of your lectures to ensure all students can follow along.")
+    }
+
+    if (negativeComments.some((c) => c.includes("explain") || c.includes("clarity") || c.includes("understand"))) {
+      suggestions.push("Work on explaining complex concepts more clearly, perhaps using more visual aids or examples.")
+    }
+
+    if (negativeComments.some((c) => c.includes("example") || c.includes("practical"))) {
+      suggestions.push("Include more practical examples and real-world applications in your teaching.")
+    }
+
+    if (negativeComments.some((c) => c.includes("material") || c.includes("content") || c.includes("outdated"))) {
+      suggestions.push("Consider updating your course materials to reflect current industry standards and practices.")
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push("Review your negative feedback comments for specific areas of improvement.")
+    }
+
+    return suggestions
+  }
+
+  const improvementSuggestions = generateSuggestions()
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f9fafb", fontFamily: "sans-serif" }}>
-      {/* Header */}
-      <header style={{ backgroundColor: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", borderBottom: "1px solid #e5e7eb" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 16px", display: "flex", justifyContent: "space-between", alignItems: "center", height: "64px" }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <TrendingUp style={{ height: "32px", width: "32px", color: "#2563eb" }} />
-            <span style={{ marginLeft: "8px", fontSize: "20px", fontWeight: "600" }}>Teacher Portal</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <User style={{ height: "20px", width: "20px", color: "#6b7280" }} />
-              <span style={{ fontSize: "14px", color: "#374151" }}>Dr. Smith</span>
-            </div>
-            <button style={{ background: "none", border: "none", cursor: "pointer" }}>
-              <LogOut style={{ height: "16px", width: "16px" }} />
-            </button>
-          </div>
-        </div>
-      </header>
+    <div style={{ padding: "1.5rem" }}>
+      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>Teacher Dashboard</h1>
 
-      <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "32px 16px" }}>
-        {/* Title */}
-        <div style={{ marginBottom: "32px" }}>
-          <h1 style={{ fontSize: "28px", fontWeight: "bold", color: "#111827" }}>Feedback Analytics</h1>
-          <p style={{ marginTop: "8px", color: "#6b7280" }}>Monitor student feedback and improve your teaching methods</p>
-        </div>
+      <div style={{ marginBottom: "1.5rem" }}>
+        <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Welcome back, {user?.name}</h2>
+        <p style={{ color: "hsl(var(--muted-foreground))" }}>
+          This is your dashboard where you can view student feedback and suggestions for improvement.
+        </p>
+      </div>
 
-        {/* Grid Layout */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "32px", marginBottom: "32px" }}>
-          {/* Feedback Chart */}
-          <div style={{ backgroundColor: "white", borderRadius: "12px", padding: "24px", border: "1px solid #e5e7eb" }}>
-            <h2 style={{ fontWeight: "600" }}>Feedback Distribution</h2>
-            <p style={{ fontSize: "14px", color: "#6b7280" }}>Overall sentiment analysis of student feedback</p>
-            <div style={{ height: "300px", marginTop: "24px" }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={feedbackData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
-                    paddingAngle={5}
-                    dataKey="value"
+      <div
+        style={{
+          marginBottom: "2rem",
+          display: "grid",
+          gap: "1.5rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+        }}
+      >
+        <Card>
+          <CardHeader style={{ paddingBottom: "0.5rem" }}>
+            <CardTitle>Total Feedback</CardTitle>
+            <CardDescription>Feedback received from students</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p style={{ fontSize: "1.875rem", fontWeight: "bold" }}>{teacherFeedback.length}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader style={{ paddingBottom: "0.5rem" }}>
+            <CardTitle>Average Rating</CardTitle>
+            <CardDescription>Your overall rating</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p style={{ fontSize: "1.875rem", fontWeight: "bold" }}>{averageRating}/5</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader style={{ paddingBottom: "0.5rem" }}>
+            <CardTitle>Positive Feedback</CardTitle>
+            <CardDescription>Percentage of positive feedback</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p style={{ fontSize: "1.875rem", fontWeight: "bold" }}>
+              {teacherFeedback.length > 0 ? `${Math.round((positiveFeedback / teacherFeedback.length) * 100)}%` : "N/A"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div
+        style={{
+          marginBottom: "2rem",
+          display: "grid",
+          gap: "1.5rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+        }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>Feedback Distribution</CardTitle>
+            <CardDescription>Breakdown of student feedback by sentiment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SimplePieChart
+              data={[
+                { name: "Positive", value: positiveFeedback, color: "#10b981" },
+                { name: "Neutral", value: neutralFeedback, color: "#6b7280" },
+                { name: "Negative", value: negativeFeedback, color: "#ef4444" },
+              ]}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Improvement Suggestions</CardTitle>
+            <CardDescription>Based on student feedback</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {improvementSuggestions.map((suggestion, index) => (
+                <li key={index} style={{ display: "flex", alignItems: "flex-start" }}>
+                  <span
+                    style={{
+                      marginRight: "0.5rem",
+                      display: "flex",
+                      height: "1.5rem",
+                      width: "1.5rem",
+                      flexShrink: 0,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "50%",
+                      backgroundColor: "hsl(var(--primary) / 0.1)",
+                      fontSize: "0.875rem",
+                      fontWeight: "500",
+                      color: "hsl(var(--primary))",
+                    }}
                   >
-                    {feedbackData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "16px" }}>
-              {feedbackData.map((item) => (
-                <div key={item.name} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: item.color }}></div>
-                  <span style={{ fontSize: "14px", fontWeight: "500" }}>{item.name}: {item.value}%</span>
-                </div>
+                    {index + 1}
+                  </span>
+                  <span>{suggestion}</span>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* Stats */}
-          <div>
-            {[
-              { label: "Total Feedback", value: "127", icon: <MessageSquare style={{ color: "#2563eb", height: "32px", width: "32px" }} /> },
-              { label: "Average Rating", value: "4.2/5", icon: <TrendingUp style={{ color: "#16a34a", height: "32px", width: "32px" }} /> },
-              { label: "Response Rate", value: "89%", icon: <TrendingUp style={{ color: "#2563eb", height: "32px", width: "32px" }} /> },
-            ].map((stat, index) => (
-              <div key={index} style={{ backgroundColor: "white", padding: "24px", borderRadius: "12px", marginBottom: "16px", border: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <p style={{ fontSize: "14px", color: "#6b7280" }}>{stat.label}</p>
-                  <p style={{ fontSize: "24px", fontWeight: "bold", color: "#111827" }}>{stat.value}</p>
-                </div>
-                {stat.icon}
-              </div>
-            ))}
-          </div>
-        </div>
+      <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Recent Feedback</h2>
 
-        {/* Tabs: Comments */}
-        <div style={{ backgroundColor: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb", marginBottom: "32px" }}>
-          <h2 style={{ fontWeight: "600" }}>Recent Feedback Comments</h2>
-          <p style={{ fontSize: "14px", color: "#6b7280" }}>Top 5 recent comments from each category</p>
-          <div style={{ display: "flex", marginTop: "16px", gap: "8px" }}>
-            {["positive", "neutral", "negative"].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setTab(cat)}
+      <div
+        style={{
+          display: "grid",
+          gap: "1.5rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+        }}
+      >
+        <Card>
+          <CardHeader style={{ backgroundColor: "rgb(236 253 245)", padding: "1rem" }}>
+            <CardTitle style={{ display: "flex", alignItems: "center", color: "#059669" }}>
+              <div
                 style={{
-                  flex: 1,
-                  padding: "8px 12px",
-                  backgroundColor: tab === cat ? "#e0f2fe" : "#f3f4f6",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  fontWeight: "500",
-                  color: tab === cat ? "#0c4a6e" : "#374151"
+                  marginRight: "0.5rem",
+                  height: "0.75rem",
+                  width: "0.75rem",
+                  borderRadius: "50%",
+                  backgroundColor: "#10b981",
+                }}
+              ></div>
+              Positive Feedback
+            </CardTitle>
+            <CardDescription>Recent positive comments from students</CardDescription>
+          </CardHeader>
+          <CardContent style={{ padding: 0 }}>
+            {recentPositive.length > 0 ? (
+              <ul style={{ borderTop: "1px solid hsl(var(--border))" }}>
+                {recentPositive.map((feedback) => (
+                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid hsl(var(--border))" }}>
+                    <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedback.comment}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          borderRadius: "9999px",
+                          backgroundColor: "#dcfce7",
+                          padding: "0.125rem 0.625rem",
+                          fontSize: "0.75rem",
+                          fontWeight: "500",
+                          color: "#166534",
+                        }}
+                      >
+                        Rating: {feedback.rating}/5
+                      </div>
+                      <span style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
+                        {feedback.date}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p
+                style={{
+                  padding: "1rem",
+                  textAlign: "center",
+                  fontSize: "0.875rem",
+                  color: "hsl(var(--muted-foreground))",
                 }}
               >
-                {cat[0].toUpperCase() + cat.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ marginTop: "24px" }}>
-            {(recentComments[tab] || []).slice(0, 5).map((comment) => (
-              <div key={comment.id} style={{ padding: "16px", border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#f9fafb", marginBottom: "12px" }}>
-                <p style={{ marginBottom: "8px", color: "#1f2937" }}>"{comment.comment}"</p>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#6b7280" }}>
-                  <span style={{ border: "1px solid #d1d5db", padding: "2px 6px", borderRadius: "4px" }}>{comment.subject}</span>
-                  <span>{comment.date}</span>
-                </div>
-              </div>
-            ))}
-
-            {recentComments[tab].length > 5 && (
-              <button
-                onClick={() => toggleCategory(tab)}
-                style={{
-                  width: "100%",
-                  marginTop: "8px",
-                  padding: "10px",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "8px",
-                  backgroundColor: "#ffffff",
-                  cursor: "pointer"
-                }}
-              >
-                {expandedCategory === tab ? (
-                  <span><ChevronUp style={{ height: "16px", width: "16px", marginRight: "8px" }} /> Show Less</span>
-                ) : (
-                  <span><ChevronDown style={{ height: "16px", width: "16px", marginRight: "8px" }} /> Show All {recentComments[tab].length} Comments</span>
-                )}
-              </button>
+                No positive feedback yet
+              </p>
             )}
-
-            {expandedCategory === tab &&
-              recentComments[tab].slice(5).map((comment) => (
-                <div key={comment.id} style={{ padding: "16px", border: "1px solid #e5e7eb", borderRadius: "8px", backgroundColor: "#f9fafb", marginTop: "12px" }}>
-                  <p style={{ marginBottom: "8px", color: "#1f2937" }}>"{comment.comment}"</p>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#6b7280" }}>
-                    <span style={{ border: "1px solid #d1d5db", padding: "2px 6px", borderRadius: "4px" }}>{comment.subject}</span>
-                    <span>{comment.date}</span>
-                  </div>
-                </div>
-              ))
-            }
+          </CardContent>
+          <div style={{ borderTop: "1px solid hsl(var(--border))", padding: "1rem" }}>
+            <Button variant="outline" style={{ width: "100%" }} disabled={recentPositive.length === 0}>
+              View All Positive Feedback
+            </Button>
           </div>
-        </div>
+        </Card>
 
-        {/* AI Suggestions */}
-        <div style={{ backgroundColor: "#ffffff", padding: "24px", borderRadius: "12px", border: "1px solid #e5e7eb" }}>
-          <h2 style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "600" }}>
-            <Lightbulb style={{ color: "#facc15", height: "20px", width: "20px" }} />
-            AI-Powered Improvement Suggestions
-          </h2>
-          <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "16px" }}>
-            Based on negative feedback analysis, here are personalized suggestions to enhance your teaching
-          </p>
-          {getSuggestions().map((s, i) => (
-            <div key={i} style={{ display: "flex", gap: "12px", backgroundColor: "#eff6ff", padding: "16px", borderRadius: "8px", marginBottom: "12px" }}>
-              <div style={{ width: "24px", height: "24px", backgroundColor: "#2563eb", color: "white", display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "50%" }}>
-                {i + 1}
-              </div>
-              <p style={{ margin: 0, color: "#1f2937" }}>{s}</p>
-            </div>
-          ))}
-        </div>
-      </main>
+        <Card>
+          <CardHeader style={{ backgroundColor: "rgb(249 250 251)", padding: "1rem" }}>
+            <CardTitle style={{ display: "flex", alignItems: "center", color: "#6b7280" }}>
+              <div
+                style={{
+                  marginRight: "0.5rem",
+                  height: "0.75rem",
+                  width: "0.75rem",
+                  borderRadius: "50%",
+                  backgroundColor: "#6b7280",
+                }}
+              ></div>
+              Neutral Feedback
+            </CardTitle>
+            <CardDescription>Recent neutral comments from students</CardDescription>
+          </CardHeader>
+          <CardContent style={{ padding: 0 }}>
+            {recentNeutral.length > 0 ? (
+              <ul style={{ borderTop: "1px solid hsl(var(--border))" }}>
+                {recentNeutral.map((feedback) => (
+                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid hsl(var(--border))" }}>
+                    <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedback.comment}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          borderRadius: "9999px",
+                          backgroundColor: "#f3f4f6",
+                          padding: "0.125rem 0.625rem",
+                          fontSize: "0.75rem",
+                          fontWeight: "500",
+                          color: "#374151",
+                        }}
+                      >
+                        Rating: {feedback.rating}/5
+                      </div>
+                      <span style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
+                        {feedback.date}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p
+                style={{
+                  padding: "1rem",
+                  textAlign: "center",
+                  fontSize: "0.875rem",
+                  color: "hsl(var(--muted-foreground))",
+                }}
+              >
+                No neutral feedback yet
+              </p>
+            )}
+          </CardContent>
+          <div style={{ borderTop: "1px solid hsl(var(--border))", padding: "1rem" }}>
+            <Button variant="outline" style={{ width: "100%" }} disabled={recentNeutral.length === 0}>
+              View All Neutral Feedback
+            </Button>
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader style={{ backgroundColor: "rgb(254 242 242)", padding: "1rem" }}>
+            <CardTitle style={{ display: "flex", alignItems: "center", color: "#dc2626" }}>
+              <div
+                style={{
+                  marginRight: "0.5rem",
+                  height: "0.75rem",
+                  width: "0.75rem",
+                  borderRadius: "50%",
+                  backgroundColor: "#ef4444",
+                }}
+              ></div>
+              Negative Feedback
+            </CardTitle>
+            <CardDescription>Recent negative comments from students</CardDescription>
+          </CardHeader>
+          <CardContent style={{ padding: 0 }}>
+            {recentNegative.length > 0 ? (
+              <ul style={{ borderTop: "1px solid hsl(var(--border))" }}>
+                {recentNegative.map((feedback) => (
+                  <li key={feedback.id} style={{ padding: "1rem", borderBottom: "1px solid hsl(var(--border))" }}>
+                    <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedback.comment}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          borderRadius: "9999px",
+                          backgroundColor: "#fee2e2",
+                          padding: "0.125rem 0.625rem",
+                          fontSize: "0.75rem",
+                          fontWeight: "500",
+                          color: "#991b1b",
+                        }}
+                      >
+                        Rating: {feedback.rating}/5
+                      </div>
+                      <span style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
+                        {feedback.date}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p
+                style={{
+                  padding: "1rem",
+                  textAlign: "center",
+                  fontSize: "0.875rem",
+                  color: "hsl(var(--muted-foreground))",
+                }}
+              >
+                No negative feedback yet
+              </p>
+            )}
+          </CardContent>
+          <div style={{ borderTop: "1px solid hsl(var(--border))", padding: "1rem" }}>
+            <Button variant="outline" style={{ width: "100%" }} disabled={recentNegative.length === 0}>
+              View All Negative Feedback
+            </Button>
+          </div>
+        </Card>
+      </div>
     </div>
   )
 }
