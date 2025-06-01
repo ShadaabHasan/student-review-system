@@ -3,6 +3,9 @@
 # Ignore trained model folders
 Model/initialModel/
 Model/results/
+Model/bert-results/
+Model/glove/
+
 
 # Ignore all model weights formats (common ML formats)
 *.h5
@@ -11,6 +14,7 @@ Model/results/
 *.onnx
 *.pkl
 *.joblib
+*.zip
 
 
 # dependencies
