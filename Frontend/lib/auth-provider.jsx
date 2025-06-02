@@ -483,22 +483,30 @@ export function AuthProvider({ children }) {
     try {
       let q = collection(db, "subjects")
 
+      // Apply filters
+      const conditions = []
       if (filters.teacherId) {
-        q = query(q, where("teacherId", "==", filters.teacherId))
+        conditions.push(where("teacherId", "==", filters.teacherId))
       }
       if (filters.year) {
-        q = query(q, where("year", "==", filters.year))
+        conditions.push(where("year", "==", filters.year))
       }
       if (filters.course) {
-        q = query(q, where("course", "==", filters.course))
+        conditions.push(where("course", "==", filters.course))
       }
 
+      if (conditions.length > 0) {
+        q = query(q, ...conditions)
+      }
+
+      console.log("Fetching subjects with filters:", filters)
       const querySnapshot = await getDocs(q)
       const subjects = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
 
+      console.log("Fetched subjects:", subjects)
       return subjects
     } catch (error) {
       console.error("Error getting subjects:", error)
@@ -508,52 +516,113 @@ export function AuthProvider({ children }) {
 
   const addFeedback = async (feedbackData) => {
     try {
-      const docRef = await addDoc(collection(db, "feedback"), {
+      console.log("Adding feedback:", feedbackData)
+
+      const feedbackToAdd = {
         ...feedbackData,
         createdAt: new Date().toISOString(),
         date: new Date().toISOString().split("T")[0],
-      })
-      return docRef.id
+      }
+
+      console.log("Feedback data to be added:", feedbackToAdd)
+
+      const docRef = await addDoc(collection(db, "feedback"), feedbackToAdd)
+
+      console.log("Feedback added successfully with ID:", docRef.id)
+
+      return {
+        id: docRef.id,
+        ...feedbackToAdd,
+      }
     } catch (error) {
-      throw new Error(error.message)
+      console.error("Error adding feedback:", error)
+      throw new Error(`Failed to add feedback: ${error.message}`)
     }
   }
 
   const getFeedback = async (filters = {}) => {
     try {
+      console.log("Fetching feedback with filters:", filters)
+
       let q = collection(db, "feedback")
 
+      // Apply filters
+      const conditions = []
       if (filters.teacherId) {
-        q = query(q, where("teacherId", "==", filters.teacherId))
+        conditions.push(where("teacherId", "==", filters.teacherId))
       }
       if (filters.studentId) {
-        q = query(q, where("studentId", "==", filters.studentId))
+        conditions.push(where("studentId", "==", filters.studentId))
       }
       if (filters.subjectId) {
-        q = query(q, where("subjectId", "==", filters.subjectId))
+        conditions.push(where("subjectId", "==", filters.subjectId))
       }
 
-      q = query(q, orderBy("createdAt", "desc"))
+      if (conditions.length > 0) {
+        q = query(q, ...conditions, orderBy("createdAt", "desc"))
+      } else {
+        q = query(q, orderBy("createdAt", "desc"))
+      }
 
       const querySnapshot = await getDocs(q)
-      return querySnapshot.docs.map((doc) => ({
+      const feedback = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
+
+      console.log("Fetched feedback:", feedback)
+      return feedback
     } catch (error) {
       console.error("Error getting feedback:", error)
-      return []
+      // If orderBy fails (no index), try without ordering
+      try {
+        console.log("Retrying without orderBy...")
+        let q = collection(db, "feedback")
+
+        const conditions = []
+        if (filters.teacherId) {
+          conditions.push(where("teacherId", "==", filters.teacherId))
+        }
+        if (filters.studentId) {
+          conditions.push(where("studentId", "==", filters.studentId))
+        }
+        if (filters.subjectId) {
+          conditions.push(where("subjectId", "==", filters.subjectId))
+        }
+
+        if (conditions.length > 0) {
+          q = query(q, ...conditions)
+        }
+
+        const querySnapshot = await getDocs(q)
+        const feedback = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+
+        // Sort manually by createdAt
+        feedback.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+        console.log("Fetched feedback (without orderBy):", feedback)
+        return feedback
+      } catch (retryError) {
+        console.error("Error getting feedback (retry):", retryError)
+        return []
+      }
     }
   }
 
   const getTeachers = async () => {
     try {
+      console.log("Fetching teachers...")
       const q = query(collection(db, "users"), where("role", "==", "teacher"))
       const querySnapshot = await getDocs(q)
-      return querySnapshot.docs.map((doc) => ({
+      const teachers = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
+      console.log("Fetched teachers:", teachers)
+      return teachers
     } catch (error) {
       console.error("Error getting teachers:", error)
       return []

@@ -17,33 +17,42 @@ export default function SubjectPage({ params }) {
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [subjectsData, teachersData, feedbackData] = await Promise.all([
-          getSubjects(),
-          getTeachers(),
-          getFeedback({ studentId: user?.id, subjectId: params.id }),
-        ])
+  const loadData = async () => {
+    try {
+      console.log("Loading data for subject:", params.id)
+      const [subjectsData, teachersData, feedbackData] = await Promise.all([
+        getSubjects(),
+        getTeachers(),
+        getFeedback({ studentId: user?.id, subjectId: params.id }),
+      ])
 
-        const foundSubject = subjectsData.find((s) => s.id === params.id)
-        const foundTeacher = foundSubject ? teachersData.find((t) => t.id === foundSubject.teacherId) : null
-        const foundFeedback = feedbackData.find((f) => f.subjectId === params.id && f.studentId === user?.id)
+      console.log("Subjects data:", subjectsData)
+      console.log("Teachers data:", teachersData)
+      console.log("Feedback data:", feedbackData)
 
-        setSubject(foundSubject)
-        setTeacher(foundTeacher)
-        setExistingFeedback(foundFeedback)
-      } catch (error) {
-        console.error("Error loading data:", error)
-      } finally {
-        setLoading(false)
-      }
+      const foundSubject = subjectsData.find((s) => s.id === params.id)
+      const foundTeacher = foundSubject ? teachersData.find((t) => t.id === foundSubject.teacherId) : null
+      const foundFeedback = feedbackData.find((f) => f.subjectId === params.id && f.studentId === user?.id)
+
+      console.log("Found subject:", foundSubject)
+      console.log("Found teacher:", foundTeacher)
+      console.log("Found feedback:", foundFeedback)
+
+      setSubject(foundSubject)
+      setTeacher(foundTeacher)
+      setExistingFeedback(foundFeedback)
+    } catch (error) {
+      console.error("Error loading data:", error)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     if (user) {
       loadData()
     }
-  }, [user, params.id, getSubjects, getTeachers, getFeedback])
+  }, [user, params.id])
 
   if (loading) {
     return (
@@ -75,19 +84,28 @@ export default function SubjectPage({ params }) {
       if (rating >= 4) sentiment = "positive"
       else if (rating <= 2) sentiment = "negative"
 
-      await addFeedback({
+      const feedbackData = {
         subjectId: subject.id,
         teacherId: teacher.id,
         studentId: user.id,
         rating: rating,
         comment,
         sentiment,
-      })
+      }
+
+      console.log("Submitting feedback:", feedbackData)
+
+      const newFeedback = await addFeedback(feedbackData)
+
+      console.log("Feedback submitted successfully:", newFeedback)
 
       setSubmitted(true)
+
+      // Reload data to show the new feedback
+      await loadData()
     } catch (error) {
       console.error("Error submitting feedback:", error)
-      alert("Failed to submit feedback. Please try again.")
+      alert(`Failed to submit feedback: ${error.message}`)
     } finally {
       setIsSubmitting(false)
     }

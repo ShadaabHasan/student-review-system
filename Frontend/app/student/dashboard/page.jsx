@@ -129,69 +129,90 @@ export default function StudentDashboard() {
     negative: 0,
   })
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (user) {
-        try {
-          // Get subjects filtered by student's year and course
-          const [subjectsData, teachersData, feedbackData] = await Promise.all([
-            getSubjects({
-              year: user.year,
-              course: user.course,
-            }),
-            getTeachers(),
-            getFeedback({ studentId: user.id }),
-          ])
+  const loadData = async () => {
+    if (user) {
+      try {
+        console.log("Loading dashboard data for user:", user.id)
 
-          // Group subjects by teacher
-          const teacherSubjectsMap = new Map()
+        // Get subjects filtered by student's year and course
+        const [subjectsData, teachersData, feedbackData] = await Promise.all([
+          getSubjects({
+            year: user.year,
+            course: user.course,
+          }),
+          getTeachers(),
+          getFeedback({ studentId: user.id }),
+        ])
 
-          subjectsData.forEach((subject) => {
-            const teacher = teachersData.find((t) => t.id === subject.teacherId)
-            if (teacher) {
-              if (!teacherSubjectsMap.has(teacher.id)) {
-                teacherSubjectsMap.set(teacher.id, {
-                  teacher: teacher,
-                  subjects: [],
-                })
-              }
-              teacherSubjectsMap.get(teacher.id).subjects.push(subject)
+        console.log("Dashboard - Subjects:", subjectsData)
+        console.log("Dashboard - Teachers:", teachersData)
+        console.log("Dashboard - Feedback:", feedbackData)
+
+        // Group subjects by teacher
+        const teacherSubjectsMap = new Map()
+
+        subjectsData.forEach((subject) => {
+          const teacher = teachersData.find((t) => t.id === subject.teacherId)
+          if (teacher) {
+            if (!teacherSubjectsMap.has(teacher.id)) {
+              teacherSubjectsMap.set(teacher.id, {
+                teacher: teacher,
+                subjects: [],
+              })
             }
-          })
+            teacherSubjectsMap.get(teacher.id).subjects.push(subject)
+          }
+        })
 
-          const teachersWithSubjectsArray = Array.from(teacherSubjectsMap.values()).sort((a, b) =>
-            a.teacher.name.localeCompare(b.teacher.name),
-          )
+        const teachersWithSubjectsArray = Array.from(teacherSubjectsMap.values()).sort((a, b) =>
+          a.teacher.name.localeCompare(b.teacher.name),
+        )
 
-          setTeachersWithSubjects(teachersWithSubjectsArray)
-          setFeedback(feedbackData)
+        setTeachersWithSubjects(teachersWithSubjectsArray)
+        setFeedback(feedbackData)
 
-          // Calculate feedback statistics
-          const uniqueSubjectsCount = new Set(feedbackData.map((f) => f.subjectId)).size
-          const avgRating =
-            feedbackData.length > 0 ? feedbackData.reduce((sum, f) => sum + f.rating, 0) / feedbackData.length : 0
-          const positiveCount = feedbackData.filter((f) => f.sentiment === "positive").length
-          const neutralCount = feedbackData.filter((f) => f.sentiment === "neutral").length
-          const negativeCount = feedbackData.filter((f) => f.sentiment === "negative").length
+        // Calculate feedback statistics
+        const uniqueSubjectsCount = new Set(feedbackData.map((f) => f.subjectId)).size
+        const avgRating =
+          feedbackData.length > 0 ? feedbackData.reduce((sum, f) => sum + f.rating, 0) / feedbackData.length : 0
+        const positiveCount = feedbackData.filter((f) => f.sentiment === "positive").length
+        const neutralCount = feedbackData.filter((f) => f.sentiment === "neutral").length
+        const negativeCount = feedbackData.filter((f) => f.sentiment === "negative").length
 
-          setFeedbackStats({
-            total: feedbackData.length,
-            uniqueSubjects: uniqueSubjectsCount,
-            averageRating: avgRating.toFixed(1),
-            positive: positiveCount,
-            neutral: neutralCount,
-            negative: negativeCount,
-          })
-        } catch (error) {
-          console.error("Error loading data:", error)
-        } finally {
-          setLoading(false)
-        }
+        setFeedbackStats({
+          total: feedbackData.length,
+          uniqueSubjects: uniqueSubjectsCount,
+          averageRating: avgRating.toFixed(1),
+          positive: positiveCount,
+          neutral: neutralCount,
+          negative: negativeCount,
+        })
+
+        console.log("Dashboard - Feedback stats:", {
+          total: feedbackData.length,
+          uniqueSubjects: uniqueSubjectsCount,
+          averageRating: avgRating.toFixed(1),
+          positive: positiveCount,
+          neutral: neutralCount,
+          negative: negativeCount,
+        })
+      } catch (error) {
+        console.error("Error loading dashboard data:", error)
+      } finally {
+        setLoading(false)
       }
     }
+  }
 
+  useEffect(() => {
     loadData()
-  }, [user, getFeedback, getSubjects, getTeachers])
+  }, [user])
+
+  // Add a refresh function that can be called
+  const refreshData = () => {
+    setLoading(true)
+    loadData()
+  }
 
   if (loading) {
     return (
@@ -210,7 +231,12 @@ export default function StudentDashboard() {
 
   return (
     <div className="p-6">
-      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>Student Dashboard</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <h1 style={{ fontSize: "1.875rem", fontWeight: "bold" }}>Student Dashboard</h1>
+        <button className="btn btn-outline btn-sm" onClick={refreshData}>
+          Refresh Data
+        </button>
+      </div>
 
       <div style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Welcome back, {user?.name}</h2>
