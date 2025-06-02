@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-provider"
-import { BookOpen, Home, LogOut, User } from "lucide-react"
+import { BookOpen, Home, LogOut, User, Users } from "lucide-react"
 import { classNames } from "@/lib/utils"
 
 export function StudentSidebar() {
@@ -12,6 +12,7 @@ export function StudentSidebar() {
 
   const navigation = [
     { name: "Dashboard", href: "/student/dashboard", icon: Home },
+    { name: "Teachers", href: "/student/teachers", icon: Users },
     { name: "Subjects", href: "/student/subjects", icon: BookOpen },
     { name: "Profile", href: "/student/profile", icon: User },
   ]

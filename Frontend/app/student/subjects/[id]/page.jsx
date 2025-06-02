@@ -1,74 +1,109 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-provider"
-import { mockSubjects, mockFeedback, mockTeachers } from "@/lib/auth-provider"
 import { Star } from "lucide-react"
 
 export default function SubjectPage({ params }) {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, getSubjects, getTeachers, getFeedback, addFeedback } = useAuth()
+  const [subject, setSubject] = useState(null)
+  const [teacher, setTeacher] = useState(null)
+  const [existingFeedback, setExistingFeedback] = useState(null)
   const [rating, setRating] = useState(3)
   const [comment, setComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  // Find the subject
-  const subject = mockSubjects.find((s) => s.id === params.id)
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [subjectsData, teachersData, feedbackData] = await Promise.all([
+          getSubjects(),
+          getTeachers(),
+          getFeedback({ studentId: user?.id, subjectId: params.id }),
+        ])
 
-  // Find the teacher
-  const teacher = subject ? mockTeachers.find((t) => t.id === subject.teacherId) : null
+        const foundSubject = subjectsData.find((s) => s.id === params.id)
+        const foundTeacher = foundSubject ? teachersData.find((t) => t.id === foundSubject.teacherId) : null
+        const foundFeedback = feedbackData.find((f) => f.subjectId === params.id && f.studentId === user?.id)
 
-  // Find existing feedback from this student for this subject
-  const existingFeedback = mockFeedback.find((f) => f.subjectId === params.id && f.studentId === user?.id)
+        setSubject(foundSubject)
+        setTeacher(foundTeacher)
+        setExistingFeedback(foundFeedback)
+      } catch (error) {
+        console.error("Error loading data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (user) {
+      loadData()
+    }
+  }, [user, params.id, getSubjects, getTeachers, getFeedback])
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="spinner"></div>
+      </div>
+    )
+  }
 
   if (!subject || !teacher) {
     return (
       <div className="p-6">
         <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>Subject Not Found</h1>
         <p>The subject you're looking for doesn't exist.</p>
-        <button className="btn btn-primary mt-4" onClick={() => router.push("/student/subjects")}>
-          Back to Subjects
+        <button className="btn btn-primary mt-4" onClick={() => router.push("/student/teachers")}>
+          Back to Teachers
         </button>
       </div>
     )
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Determine sentiment based on rating
-    let sentiment = "neutral"
-    if (rating >= 4) sentiment = "positive"
-    else if (rating <= 2) sentiment = "negative"
+    try {
+      // Determine sentiment based on rating
+      let sentiment = "neutral"
+      if (rating >= 4) sentiment = "positive"
+      else if (rating <= 2) sentiment = "negative"
 
-    // In a real app, you would send this to your API
-    setTimeout(() => {
-      // Create new feedback object
-      const newFeedback = {
-        id: `f${Date.now()}`,
+      await addFeedback({
         subjectId: subject.id,
         teacherId: teacher.id,
-        studentId: user?.id || "",
+        studentId: user.id,
         rating: rating,
         comment,
         sentiment,
-        date: new Date().toISOString().split("T")[0],
-      }
+      })
 
-      // Add to mock data (in a real app, this would be saved to a database)
-      mockFeedback.push(newFeedback)
-
-      setIsSubmitting(false)
       setSubmitted(true)
-    }, 1000)
+    } catch (error) {
+      console.error("Error submitting feedback:", error)
+      alert("Failed to submit feedback. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="p-6">
-      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>{subject.name}</h1>
+      <div style={{ marginBottom: "1.5rem" }}>
+        <button className="btn btn-outline btn-sm" onClick={() => router.push("/student/teachers")}>
+          ← Back to Teachers
+        </button>
+      </div>
+
+      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>
+        {subject.name} - {teacher.name}
+      </h1>
 
       <div
         style={{
@@ -85,6 +120,9 @@ export default function SubjectPage({ params }) {
           </div>
           <div className="card-content">
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div>
+                <span style={{ fontWeight: "500" }}>Subject:</span> {subject.name}
+              </div>
               <div>
                 <span style={{ fontWeight: "500" }}>Course:</span> {subject.course}
               </div>
@@ -108,6 +146,9 @@ export default function SubjectPage({ params }) {
               <div>
                 <span style={{ fontWeight: "500" }}>Email:</span> {teacher.email}
               </div>
+              <div>
+                <span style={{ fontWeight: "500" }}>Main Subject:</span> {teacher.subject}
+              </div>
             </div>
           </div>
         </div>
@@ -123,8 +164,8 @@ export default function SubjectPage({ params }) {
             <p>Your feedback has been recorded and will help improve the teaching quality.</p>
           </div>
           <div className="card-footer">
-            <button className="btn btn-primary" onClick={() => router.push("/student/subjects")}>
-              Back to Subjects
+            <button className="btn btn-primary" onClick={() => router.push("/student/teachers")}>
+              Back to Teachers
             </button>
           </div>
         </div>
@@ -149,8 +190,8 @@ export default function SubjectPage({ params }) {
             </div>
           </div>
           <div className="card-footer">
-            <button className="btn btn-primary" onClick={() => router.push("/student/subjects")}>
-              Back to Subjects
+            <button className="btn btn-primary" onClick={() => router.push("/student/teachers")}>
+              Back to Teachers
             </button>
           </div>
         </div>
@@ -159,7 +200,9 @@ export default function SubjectPage({ params }) {
           <form onSubmit={handleSubmit}>
             <div className="card-header">
               <h2 className="card-title">Rate This Subject</h2>
-              <p className="card-description">Provide your feedback about the teaching quality</p>
+              <p className="card-description">
+                Provide your feedback about {teacher.name}'s teaching of {subject.name}
+              </p>
             </div>
             <div className="card-content" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <div className="form-group">
@@ -186,7 +229,7 @@ export default function SubjectPage({ params }) {
                 </label>
                 <textarea
                   id="comment"
-                  placeholder="Share your experience with this teacher..."
+                  placeholder={`Share your experience with ${teacher.name}'s teaching of ${subject.name}...`}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   rows={5}
@@ -196,7 +239,7 @@ export default function SubjectPage({ params }) {
               </div>
             </div>
             <div className="card-footer" style={{ display: "flex", justifyContent: "space-between" }}>
-              <button type="button" className="btn btn-outline" onClick={() => router.push("/student/subjects")}>
+              <button type="button" className="btn btn-outline" onClick={() => router.push("/student/teachers")}>
                 Cancel
               </button>
               <button type="submit" className="btn btn-primary" disabled={isSubmitting}>

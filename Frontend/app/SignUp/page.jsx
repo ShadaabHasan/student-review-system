@@ -175,6 +175,7 @@
 // }
 
 
+
 "use client"
 
 import { useState } from "react"
@@ -197,6 +198,10 @@ export default function SignupPage() {
   const [subject, setSubject] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [year, setYear] = useState("")
+  const [course, setCourse] = useState("")
+  const [teacherYear, setTeacherYear] = useState("1")
+  const [teacherCourse, setTeacherCourse] = useState("Science")
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -212,10 +217,33 @@ export default function SignupPage() {
       return
     }
 
+    if (role === "student" && (!year || !course)) {
+      setError("Please select your year and course")
+      return
+    }
+
+    if (role === "teacher" && (!teacherYear || !teacherCourse)) {
+      setError("Please select the year and course you teach")
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      const userData = await signup(name, email, password, role, role === "teacher" ? subject : null)
+      const userData = await signup(
+        name,
+        email,
+        password,
+        role,
+        role === "teacher"
+          ? {
+              name: subject,
+              year: Number.parseInt(teacherYear),
+              course: teacherCourse,
+            }
+          : null,
+        role === "student" ? { year: Number.parseInt(year), course } : null,
+      )
 
       // Redirect based on role
       if (userData.role === "student") {
@@ -307,20 +335,97 @@ export default function SignupPage() {
               />
             </div>
 
+            {role === "student" && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="year" className="form-label">
+                    Year
+                  </label>
+                  <select
+                    id="year"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    required
+                    className="form-select"
+                  >
+                    <option value="">Select Year</option>
+                    <option value="1">Year 1</option>
+                    <option value="2">Year 2</option>
+                    <option value="3">Year 3</option>
+                    <option value="4">Year 4</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="course" className="form-label">
+                    Course
+                  </label>
+                  <select
+                    id="course"
+                    value={course}
+                    onChange={(e) => setCourse(e.target.value)}
+                    required
+                    className="form-select"
+                  >
+                    <option value="">Select Course</option>
+                    <option value="Science">Science</option>
+                    <option value="Arts">Arts</option>
+                    <option value="Commerce">Commerce</option>
+                    <option value="Engineering">Engineering</option>
+                  </select>
+                </div>
+              </>
+            )}
+
             {role === "teacher" && (
-              <div className="form-group">
-                <label htmlFor="subject" className="form-label">
-                  Subject
-                </label>
-                <input
-                  id="subject"
-                  placeholder="e.g., Mathematics, Physics, Chemistry"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  required
-                  className="form-input"
-                />
-              </div>
+              <>
+                <div className="form-group">
+                  <label htmlFor="subject" className="form-label">
+                    Subject
+                  </label>
+                  <input
+                    id="subject"
+                    placeholder="e.g., Mathematics, Physics, Chemistry"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    required
+                    className="form-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="teacherYear" className="form-label">
+                    Year You Teach
+                  </label>
+                  <select
+                    id="teacherYear"
+                    value={teacherYear}
+                    onChange={(e) => setTeacherYear(e.target.value)}
+                    required
+                    className="form-select"
+                  >
+                    <option value="1">Year 1</option>
+                    <option value="2">Year 2</option>
+                    <option value="3">Year 3</option>
+                    <option value="4">Year 4</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="teacherCourse" className="form-label">
+                    Course You Teach
+                  </label>
+                  <select
+                    id="teacherCourse"
+                    value={teacherCourse}
+                    onChange={(e) => setTeacherCourse(e.target.value)}
+                    required
+                    className="form-select"
+                  >
+                    <option value="Science">Science</option>
+                    <option value="Arts">Arts</option>
+                    <option value="Commerce">Commerce</option>
+                    <option value="Engineering">Engineering</option>
+                  </select>
+                </div>
+              </>
             )}
 
             <div className="form-group">

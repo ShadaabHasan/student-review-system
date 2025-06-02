@@ -396,6 +396,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-provider"
+import Link from "next/link"
 
 // Simple pie chart component
 const SimplePieChart = ({ data }) => {
@@ -475,16 +476,21 @@ const SimplePieChart = ({ data }) => {
 }
 
 export default function TeacherDashboard() {
-  const { user, getFeedback } = useAuth()
+  const { user, getFeedback, getSubjects } = useAuth()
   const [feedback, setFeedback] = useState([])
+  const [subjects, setSubjects] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadFeedback = async () => {
       if (user) {
         try {
-          const feedbackData = await getFeedback({ teacherId: user.id })
+          const [feedbackData, subjectsData] = await Promise.all([
+            getFeedback({ teacherId: user.id }),
+            getSubjects({ teacherId: user.id }),
+          ])
           setFeedback(feedbackData)
+          setSubjects(subjectsData)
         } catch (error) {
           console.error("Error loading feedback:", error)
         } finally {
@@ -494,7 +500,7 @@ export default function TeacherDashboard() {
     }
 
     loadFeedback()
-  }, [user, getFeedback])
+  }, [user, getFeedback, getSubjects])
 
   if (loading) {
     return (
@@ -560,6 +566,19 @@ export default function TeacherDashboard() {
   }
 
   const improvementSuggestions = generateSuggestions()
+
+  // Group feedback by subject
+  const feedbackBySubject = {}
+  feedback.forEach((item) => {
+    if (!feedbackBySubject[item.subjectId]) {
+      const subject = subjects.find((s) => s.id === item.subjectId)
+      feedbackBySubject[item.subjectId] = {
+        subject: subject || { name: "Unknown Subject", year: "?", course: "?" },
+        feedback: [],
+      }
+    }
+    feedbackBySubject[item.subjectId].feedback.push(item)
+  })
 
   return (
     <div className="p-6">
@@ -672,6 +691,83 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
+      <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Feedback by Subject</h2>
+
+      {Object.keys(feedbackBySubject).length > 0 ? (
+        <div style={{ marginBottom: "2rem" }}>
+          {Object.values(feedbackBySubject).map(({ subject, feedback }) => {
+            const avgRating = (feedback.reduce((sum, f) => sum + f.rating, 0) / feedback.length).toFixed(1)
+            const positiveCount = feedback.filter((f) => f.sentiment === "positive").length
+            const positivePercent = Math.round((positiveCount / feedback.length) * 100)
+
+            return (
+              <div key={subject.id} className="card mb-4">
+                <div className="card-header">
+                  <h3 className="card-title">{subject.name}</h3>
+                  <p className="card-description">
+                    Year {subject.year} - {subject.course} • {feedback.length} feedback entries
+                  </p>
+                </div>
+                <div className="card-content">
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                      gap: "1rem",
+                      marginBottom: "1rem",
+                    }}
+                  >
+                    <div>
+                      <p className="text-sm text-muted">Average Rating</p>
+                      <p className="text-xl font-semibold">{avgRating}/5</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted">Positive Feedback</p>
+                      <p className="text-xl font-semibold">{positivePercent}%</p>
+                    </div>
+                  </div>
+
+                  <h4 style={{ fontSize: "1rem", fontWeight: "600", marginBottom: "0.5rem" }}>Recent Comments</h4>
+                  {feedback.slice(0, 2).map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        padding: "0.75rem",
+                        marginBottom: "0.5rem",
+                        backgroundColor: "var(--muted)",
+                        borderRadius: "var(--radius)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+                        <div
+                          className={`badge ${
+                            item.sentiment === "positive"
+                              ? "badge-positive"
+                              : item.sentiment === "neutral"
+                                ? "badge-neutral"
+                                : "badge-negative"
+                          }`}
+                        >
+                          Rating: {item.rating}/5
+                        </div>
+                        <span className="text-muted text-sm">{item.date}</span>
+                      </div>
+                      <p style={{ fontSize: "0.875rem" }}>{item.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="card">
+          <div className="card-content text-center">
+            <p className="text-muted">No feedback received yet for any of your subjects.</p>
+          </div>
+        </div>
+      )}
+
       <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Recent Feedback</h2>
 
       <div
@@ -700,15 +796,24 @@ export default function TeacherDashboard() {
           <div className="card-content" style={{ padding: 0 }}>
             {recentPositive.length > 0 ? (
               <ul>
-                {recentPositive.map((feedbackItem) => (
-                  <li key={feedbackItem.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
-                    <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedbackItem.comment}</p>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div className="badge badge-positive">Rating: {feedbackItem.rating}/5</div>
-                      <span className="text-muted text-sm">{feedbackItem.date}</span>
-                    </div>
-                  </li>
-                ))}
+                {recentPositive.map((feedbackItem) => {
+                  const subject = subjects.find((s) => s.id === feedbackItem.subjectId)
+                  return (
+                    <li key={feedbackItem.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
+                      <div style={{ marginBottom: "0.25rem", display: "flex", justifyContent: "space-between" }}>
+                        <span className="font-medium">{subject?.name || "Unknown Subject"}</span>
+                        <span className="text-sm text-muted">
+                          Year {subject?.year} - {subject?.course}
+                        </span>
+                      </div>
+                      <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedbackItem.comment}</p>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div className="badge badge-positive">Rating: {feedbackItem.rating}/5</div>
+                        <span className="text-muted text-sm">{feedbackItem.date}</span>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             ) : (
               <p className="p-4 text-center text-muted text-sm">No positive feedback yet</p>
@@ -735,15 +840,24 @@ export default function TeacherDashboard() {
           <div className="card-content" style={{ padding: 0 }}>
             {recentNeutral.length > 0 ? (
               <ul>
-                {recentNeutral.map((feedbackItem) => (
-                  <li key={feedbackItem.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
-                    <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedbackItem.comment}</p>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div className="badge badge-neutral">Rating: {feedbackItem.rating}/5</div>
-                      <span className="text-muted text-sm">{feedbackItem.date}</span>
-                    </div>
-                  </li>
-                ))}
+                {recentNeutral.map((feedbackItem) => {
+                  const subject = subjects.find((s) => s.id === feedbackItem.subjectId)
+                  return (
+                    <li key={feedbackItem.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
+                      <div style={{ marginBottom: "0.25rem", display: "flex", justifyContent: "space-between" }}>
+                        <span className="font-medium">{subject?.name || "Unknown Subject"}</span>
+                        <span className="text-sm text-muted">
+                          Year {subject?.year} - {subject?.course}
+                        </span>
+                      </div>
+                      <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedbackItem.comment}</p>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div className="badge badge-neutral">Rating: {feedbackItem.rating}/5</div>
+                        <span className="text-muted text-sm">{feedbackItem.date}</span>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             ) : (
               <p className="p-4 text-center text-muted text-sm">No neutral feedback yet</p>
@@ -770,15 +884,24 @@ export default function TeacherDashboard() {
           <div className="card-content" style={{ padding: 0 }}>
             {recentNegative.length > 0 ? (
               <ul>
-                {recentNegative.map((feedbackItem) => (
-                  <li key={feedbackItem.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
-                    <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedbackItem.comment}</p>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div className="badge badge-negative">Rating: {feedbackItem.rating}/5</div>
-                      <span className="text-muted text-sm">{feedbackItem.date}</span>
-                    </div>
-                  </li>
-                ))}
+                {recentNegative.map((feedbackItem) => {
+                  const subject = subjects.find((s) => s.id === feedbackItem.subjectId)
+                  return (
+                    <li key={feedbackItem.id} style={{ padding: "1rem", borderBottom: "1px solid var(--border)" }}>
+                      <div style={{ marginBottom: "0.25rem", display: "flex", justifyContent: "space-between" }}>
+                        <span className="font-medium">{subject?.name || "Unknown Subject"}</span>
+                        <span className="text-sm text-muted">
+                          Year {subject?.year} - {subject?.course}
+                        </span>
+                      </div>
+                      <p style={{ marginBottom: "0.25rem", fontSize: "0.875rem" }}>{feedbackItem.comment}</p>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div className="badge badge-negative">Rating: {feedbackItem.rating}/5</div>
+                        <span className="text-muted text-sm">{feedbackItem.date}</span>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             ) : (
               <p className="p-4 text-center text-muted text-sm">No negative feedback yet</p>
@@ -786,6 +909,14 @@ export default function TeacherDashboard() {
           </div>
         </div>
       </div>
+
+      {feedback.length > 0 && (
+        <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+          <Link href="/teacher/feedback" className="btn btn-primary">
+            View Detailed Feedback Analysis
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

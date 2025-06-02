@@ -131,239 +131,254 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useAuth } from "@/lib/auth-provider"
-import { Star } from "lucide-react"
 
-export default function SubjectPage({ params }) {
-  const router = useRouter()
-  const { user, getSubjects, getTeachers, getFeedback, addFeedback } = useAuth()
-  const [subject, setSubject] = useState(null)
-  const [teacher, setTeacher] = useState(null)
-  const [existingFeedback, setExistingFeedback] = useState(null)
-  const [rating, setRating] = useState(3)
-  const [comment, setComment] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+export default function SubjectsPage() {
+  const { user, getSubjects, getTeachers, getFeedback } = useAuth()
+  const [subjects, setSubjects] = useState([])
+  const [teachers, setTeachers] = useState([])
+  const [feedback, setFeedback] = useState([])
+  const [selectedYear, setSelectedYear] = useState("")
+  const [selectedCourse, setSelectedCourse] = useState("")
   const [loading, setLoading] = useState(true)
+  const [years, setYears] = useState([1, 2, 3, 4]) // Default years
+  const [courses, setCourses] = useState(["Science", "Arts", "Commerce", "Engineering"]) // Default courses
 
   useEffect(() => {
-    const loadData = async () => {
+    // Set default filters to student's year and course when user data is available
+    if (user && user.year && user.course) {
+      setSelectedYear(user.year.toString())
+      setSelectedCourse(user.course)
+    }
+  }, [user])
+
+  useEffect(() => {
+    const loadInitialData = async () => {
       try {
-        const [subjectsData, teachersData, feedbackData] = await Promise.all([
+        // Load all subjects, teachers, and student feedback
+        const [allSubjects, allTeachers, studentFeedback] = await Promise.all([
           getSubjects(),
           getTeachers(),
-          getFeedback({ studentId: user?.id, subjectId: params.id }),
+          user ? getFeedback({ studentId: user.id }) : [],
         ])
 
-        const foundSubject = subjectsData.find((s) => s.id === params.id)
-        const foundTeacher = foundSubject ? teachersData.find((t) => t.id === foundSubject.teacherId) : null
-        const foundFeedback = feedbackData.find((f) => f.subjectId === params.id && f.studentId === user?.id)
+        setTeachers(allTeachers)
+        setFeedback(studentFeedback)
 
-        setSubject(foundSubject)
-        setTeacher(foundTeacher)
-        setExistingFeedback(foundFeedback)
+        if (allSubjects.length > 0) {
+          // Get unique years and courses from existing subjects
+          const uniqueYears = Array.from(new Set(allSubjects.map((s) => s.year))).sort()
+          const uniqueCourses = Array.from(new Set(allSubjects.map((s) => s.course)))
+
+          if (uniqueYears.length > 0) setYears(uniqueYears)
+          if (uniqueCourses.length > 0) setCourses(uniqueCourses)
+        }
       } catch (error) {
-        console.error("Error loading data:", error)
+        console.error("Error loading initial data:", error)
+      }
+    }
+
+    loadInitialData()
+  }, [getSubjects, getTeachers, getFeedback, user])
+
+  useEffect(() => {
+    const loadFilteredSubjects = async () => {
+      if (!selectedYear || !selectedCourse) {
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+      try {
+        const filteredSubjects = await getSubjects({
+          year: Number.parseInt(selectedYear),
+          course: selectedCourse,
+        })
+        setSubjects(filteredSubjects)
+      } catch (error) {
+        console.error("Error filtering subjects:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    if (user) {
-      loadData()
-    }
-  }, [user, params.id, getSubjects, getTeachers, getFeedback])
+    loadFilteredSubjects()
+  }, [selectedYear, selectedCourse, getSubjects])
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="spinner"></div>
-      </div>
-    )
+  // Check if student has provided feedback for a specific subject
+  const hasFeedback = (subjectId) => {
+    return feedback.some((f) => f.subjectId === subjectId)
   }
 
-  if (!subject || !teacher) {
-    return (
-      <div className="p-6">
-        <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>Subject Not Found</h1>
-        <p>The subject you're looking for doesn't exist.</p>
-        <button className="btn btn-primary mt-4" onClick={() => router.push("/student/subjects")}>
-          Back to Subjects
-        </button>
-      </div>
-    )
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Determine sentiment based on rating
-      let sentiment = "neutral"
-      if (rating >= 4) sentiment = "positive"
-      else if (rating <= 2) sentiment = "negative"
-
-      await addFeedback({
-        subjectId: subject.id,
-        teacherId: teacher.id,
-        studentId: user.id,
-        rating: rating,
-        comment,
-        sentiment,
-      })
-
-      setSubmitted(true)
-    } catch (error) {
-      console.error("Error submitting feedback:", error)
-      alert("Failed to submit feedback. Please try again.")
-    } finally {
-      setIsSubmitting(false)
-    }
+  // Get feedback for a specific subject
+  const getFeedbackForSubject = (subjectId) => {
+    return feedback.find((f) => f.subjectId === subjectId)
   }
 
   return (
     <div className="p-6">
-      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>{subject.name}</h1>
+      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>My Subjects & Feedback</h1>
 
-      <div
-        style={{
-          marginBottom: "1.5rem",
-          display: "grid",
-          gap: "1.5rem",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        }}
-      >
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Subject Information</h2>
-            <p className="card-description">Details about this subject</p>
-          </div>
-          <div className="card-content">
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <div>
-                <span style={{ fontWeight: "500" }}>Course:</span> {subject.course}
-              </div>
-              <div>
-                <span style={{ fontWeight: "500" }}>Year:</span> {subject.year}
-              </div>
-            </div>
-          </div>
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="card-title">Filter Subjects</h2>
+          <p className="card-description">
+            {selectedYear === user?.year?.toString() && selectedCourse === user?.course
+              ? "Viewing subjects for your year and course"
+              : "Select year and course to view relevant subjects"}
+          </p>
         </div>
+        <div className="card-content">
+          <div
+            style={{
+              display: "grid",
+              gap: "1rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            }}
+          >
+            <div className="form-group">
+              <label htmlFor="year" className="form-label">
+                Year
+              </label>
+              <select
+                id="year"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="form-select"
+              >
+                <option value="">Select Year</option>
+                {years.map((year) => (
+                  <option key={year} value={year.toString()}>
+                    Year {year}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Teacher Information</h2>
-            <p className="card-description">About your instructor</p>
-          </div>
-          <div className="card-content">
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <div>
-                <span style={{ fontWeight: "500" }}>Name:</span> {teacher.name}
-              </div>
-              <div>
-                <span style={{ fontWeight: "500" }}>Email:</span> {teacher.email}
-              </div>
-              <div>
-                <span style={{ fontWeight: "500" }}>Subject:</span> {teacher.subject}
-              </div>
+            <div className="form-group">
+              <label htmlFor="course" className="form-label">
+                Course
+              </label>
+              <select
+                id="course"
+                value={selectedCourse}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                className="form-select"
+              >
+                <option value="">Select Course</option>
+                {courses.map((course) => (
+                  <option key={course} value={course}>
+                    {course}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
       </div>
 
-      {submitted ? (
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Feedback Submitted</h2>
-            <p className="card-description">Thank you for your feedback!</p>
-          </div>
-          <div className="card-content">
-            <p>Your feedback has been recorded and will help improve the teaching quality.</p>
-          </div>
-          <div className="card-footer">
-            <button className="btn btn-primary" onClick={() => router.push("/student/subjects")}>
-              Back to Subjects
-            </button>
-          </div>
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="card-title">My Feedback Summary</h2>
+          <p className="card-description">Overview of your feedback contributions</p>
         </div>
-      ) : existingFeedback ? (
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">Your Previous Feedback</h2>
-            <p className="card-description">You have already provided feedback for this subject</p>
-          </div>
-          <div className="card-content">
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div>
-                <span style={{ fontWeight: "500" }}>Rating:</span> {existingFeedback.rating}/5
-              </div>
-              <div>
-                <span style={{ fontWeight: "500" }}>Comment:</span>
-                <p style={{ marginTop: "0.25rem" }}>{existingFeedback.comment}</p>
-              </div>
-              <div>
-                <span style={{ fontWeight: "500" }}>Date:</span> {existingFeedback.date}
-              </div>
+        <div className="card-content">
+          <div
+            style={{
+              display: "grid",
+              gap: "1.5rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            }}
+          >
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Total Feedback</h3>
+              <p className="text-3xl font-bold">{feedback.length}</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Subjects Rated</h3>
+              <p className="text-3xl font-bold">{new Set(feedback.map((f) => f.subjectId)).size}</p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-1">Average Rating</h3>
+              <p className="text-3xl font-bold">
+                {feedback.length > 0
+                  ? (feedback.reduce((sum, f) => sum + f.rating, 0) / feedback.length).toFixed(1)
+                  : "N/A"}
+                /5
+              </p>
             </div>
           </div>
-          <div className="card-footer">
-            <button className="btn btn-primary" onClick={() => router.push("/student/subjects")}>
-              Back to Subjects
-            </button>
-          </div>
+        </div>
+      </div>
+
+      <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Available Subjects</h2>
+
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
+          <div className="spinner"></div>
+        </div>
+      ) : subjects.length > 0 ? (
+        <div
+          style={{
+            display: "grid",
+            gap: "1rem",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+          }}
+        >
+          {subjects.map((subject) => {
+            const teacher = teachers.find((t) => t.id === subject.teacherId)
+            const subjectFeedback = getFeedbackForSubject(subject.id)
+
+            return (
+              <div key={subject.id} className="card">
+                <div className="card-header">
+                  <h3 className="card-title">{subject.name}</h3>
+                  <p className="card-description">
+                    Year {subject.year} - {subject.course}
+                  </p>
+                </div>
+                <div className="card-content">
+                  <p style={{ marginBottom: "1rem", fontSize: "0.875rem" }}>
+                    <span style={{ fontWeight: "500" }}>Teacher:</span>{" "}
+                    {teacher?.name || subject.teacherName || "Unknown Teacher"}
+                  </p>
+
+                  {hasFeedback(subject.id) ? (
+                    <div style={{ marginBottom: "1rem" }}>
+                      <div className="badge badge-positive mb-2">You rated this: {subjectFeedback.rating}/5</div>
+                      <p className="text-sm italic">"{subjectFeedback.comment}"</p>
+                      <p className="text-xs text-muted mt-1">Submitted on {subjectFeedback.date}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted mb-4">You haven't provided feedback for this subject yet.</p>
+                  )}
+
+                  <Link
+                    href={`/student/subjects/${subject.id}`}
+                    className={`btn ${hasFeedback(subject.id) ? "btn-outline" : "btn-primary"} btn-block`}
+                  >
+                    {hasFeedback(subject.id) ? "View Feedback" : "Rate Subject"}
+                  </Link>
+                </div>
+              </div>
+            )
+          })}
         </div>
       ) : (
         <div className="card">
-          <form onSubmit={handleSubmit}>
-            <div className="card-header">
-              <h2 className="card-title">Rate This Subject</h2>
-              <p className="card-description">Provide your feedback about the teaching quality</p>
-            </div>
-            <div className="card-content" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              <div className="form-group">
-                <label className="form-label">Rating</label>
-                <div className="rating-group">
-                  {[1, 2, 3, 4, 5].map((value) => (
-                    <div key={value} className="rating-item">
-                      <button
-                        type="button"
-                        className={`rating-star ${rating >= value ? "active" : ""}`}
-                        onClick={() => setRating(value)}
-                      >
-                        <Star style={{ height: "1.25rem", width: "1.25rem" }} />
-                      </button>
-                      <span className="rating-value">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="comment" className="form-label">
-                  Comment
-                </label>
-                <textarea
-                  id="comment"
-                  placeholder="Share your experience with this teacher..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={5}
-                  required
-                  className="form-textarea"
-                />
-              </div>
-            </div>
-            <div className="card-footer" style={{ display: "flex", justifyContent: "space-between" }}>
-              <button type="button" className="btn btn-outline" onClick={() => router.push("/student/subjects")}>
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? "Submitting..." : "Submit Feedback"}
-              </button>
-            </div>
-          </form>
+          <div className="card-content text-center">
+            <p className="text-muted">
+              {selectedYear && selectedCourse
+                ? "No subjects found for the selected year and course. Teachers need to add subjects for this year and course first."
+                : "Please select a year and course to view subjects."}
+            </p>
+            {selectedYear && selectedCourse && (
+              <p className="text-muted text-sm" style={{ marginTop: "0.5rem" }}>
+                Ask your teachers to add their subjects through their profile page.
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>

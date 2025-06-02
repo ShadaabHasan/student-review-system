@@ -15,6 +15,7 @@ Model/glove/
 *.pkl
 *.joblib
 *.zip
+*.txt
 
 
 # dependencies

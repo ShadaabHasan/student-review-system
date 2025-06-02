@@ -158,6 +158,7 @@ export default function Comments() {
   const [feedback, setFeedback] = useState([])
   const [subjects, setSubjects] = useState([])
   const [filter, setFilter] = useState("all")
+  const [subjectFilter, setSubjectFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [loading, setLoading] = useState(true)
 
@@ -197,6 +198,10 @@ export default function Comments() {
       return feedbackItem.sentiment === filter
     })
     .filter((feedbackItem) => {
+      if (subjectFilter === "all") return true
+      return feedbackItem.subjectId === subjectFilter
+    })
+    .filter((feedbackItem) => {
       if (!searchTerm) return true
       return feedbackItem.comment.toLowerCase().includes(searchTerm.toLowerCase())
     })
@@ -228,6 +233,25 @@ export default function Comments() {
                 <option value="positive">Positive</option>
                 <option value="neutral">Neutral</option>
                 <option value="negative">Negative</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="subjectFilter" className="form-label">
+                Subject
+              </label>
+              <select
+                id="subjectFilter"
+                value={subjectFilter}
+                onChange={(e) => setSubjectFilter(e.target.value)}
+                className="form-select"
+              >
+                <option value="all">All Subjects</option>
+                {subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name} (Year {subject.year} - {subject.course})
+                  </option>
+                ))}
               </select>
             </div>
 

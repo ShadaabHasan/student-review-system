@@ -252,6 +252,19 @@ export default function FeedbackAnalysis() {
 
   const maxCount = Math.max(...ratingCounts.map((r) => r.count))
 
+  // Group feedback by subject for analysis
+  const feedbackBySubject = {}
+  feedback.forEach((item) => {
+    if (!feedbackBySubject[item.subjectId]) {
+      const subject = subjects.find((s) => s.id === item.subjectId)
+      feedbackBySubject[item.subjectId] = {
+        subject: subject || { name: "Unknown Subject", year: "?", course: "?" },
+        feedback: [],
+      }
+    }
+    feedbackBySubject[item.subjectId].feedback.push(item)
+  })
+
   return (
     <div className="p-6">
       <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>Feedback Analysis</h1>
@@ -369,6 +382,83 @@ export default function FeedbackAnalysis() {
           </div>
         </div>
       </div>
+
+      {selectedSubject === "all" && (
+        <div className="card mt-6 mb-6">
+          <div className="card-header">
+            <h3 className="card-title">Feedback by Subject</h3>
+            <p className="card-description">Analysis of feedback across different subjects</p>
+          </div>
+          <div className="card-content" style={{ padding: 0 }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>
+                      Subject
+                    </th>
+                    <th style={{ textAlign: "left", padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>
+                      Year - Course
+                    </th>
+                    <th style={{ textAlign: "center", padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>
+                      Feedback Count
+                    </th>
+                    <th style={{ textAlign: "center", padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>
+                      Avg. Rating
+                    </th>
+                    <th style={{ textAlign: "center", padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>
+                      Positive %
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.values(feedbackBySubject).map(({ subject, feedback }) => {
+                    const avgRating = (feedback.reduce((sum, f) => sum + f.rating, 0) / feedback.length).toFixed(1)
+                    const positiveCount = feedback.filter((f) => f.sentiment === "positive").length
+                    const positivePercent = Math.round((positiveCount / feedback.length) * 100)
+
+                    return (
+                      <tr key={subject.id}>
+                        <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>{subject.name}</td>
+                        <td style={{ padding: "0.75rem", borderBottom: "1px solid var(--border)" }}>
+                          Year {subject.year} - {subject.course}
+                        </td>
+                        <td
+                          style={{
+                            padding: "0.75rem",
+                            borderBottom: "1px solid var(--border)",
+                            textAlign: "center",
+                          }}
+                        >
+                          {feedback.length}
+                        </td>
+                        <td
+                          style={{
+                            padding: "0.75rem",
+                            borderBottom: "1px solid var(--border)",
+                            textAlign: "center",
+                          }}
+                        >
+                          {avgRating}/5
+                        </td>
+                        <td
+                          style={{
+                            padding: "0.75rem",
+                            borderBottom: "1px solid var(--border)",
+                            textAlign: "center",
+                          }}
+                        >
+                          {positivePercent}%
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card mt-6">
         <div className="card-header">

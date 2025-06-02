@@ -318,6 +318,8 @@
 // // Export mock data for use in other components
 // export { mockStudents, mockTeachers }
 
+
+
 "use client"
 
 import { createContext, useContext, useState, useEffect } from "react"
@@ -377,7 +379,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const signup = async (name, email, password, role, subject = null) => {
+  const signup = async (name, email, password, role, subjectInfo = null, studentInfo = null) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password)
 
@@ -386,11 +388,28 @@ export function AuthProvider({ children }) {
         name,
         email,
         role,
-        ...(role === "teacher" && subject && { subject }),
         createdAt: new Date().toISOString(),
       }
 
+      // Add student info if applicable
+      if (role === "student" && studentInfo) {
+        userData.year = studentInfo.year
+        userData.course = studentInfo.course
+      }
+
       await setDoc(doc(db, "users", userCredential.user.uid), userData)
+
+      // If teacher, create their first subject
+      if (role === "teacher" && subjectInfo) {
+        await addDoc(collection(db, "subjects"), {
+          name: subjectInfo.name,
+          year: subjectInfo.year,
+          course: subjectInfo.course,
+          teacherId: userCredential.user.uid,
+          teacherName: name,
+          createdAt: new Date().toISOString(),
+        })
+      }
 
       const newUser = {
         id: userCredential.user.uid,
@@ -414,16 +433,49 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Firestore helper functions
+  // Enhanced addSubject function with better error handling and validation
   const addSubject = async (subjectData) => {
     try {
+      // Validate required fields
+      if (!subjectData.name || !subjectData.teacherId || !subjectData.teacherName) {
+        throw new Error("Missing required fields: name, teacherId, or teacherName")
+      }
+
+      if (!subjectData.year || !subjectData.course) {
+        throw new Error("Missing required fields: year or course")
+      }
+
+      // Ensure teacherId matches current user
+      if (subjectData.teacherId !== auth.currentUser?.uid) {
+        throw new Error("Unauthorized: teacherId does not match current user")
+      }
+
       const docRef = await addDoc(collection(db, "subjects"), {
-        ...subjectData,
+        name: subjectData.name,
+        year: Number(subjectData.year),
+        course: subjectData.course,
+        teacherId: subjectData.teacherId,
+        teacherName: subjectData.teacherName,
         createdAt: new Date().toISOString(),
       })
-      return docRef.id
+
+      return {
+        id: docRef.id,
+        ...subjectData,
+        year: Number(subjectData.year),
+        createdAt: new Date().toISOString(),
+      }
     } catch (error) {
-      throw new Error(error.message)
+      console.error("Error adding subject to Firebase:", error)
+
+      // Provide more specific error messages
+      if (error.code === "permission-denied") {
+        throw new Error("Permission denied. Please check your Firestore security rules.")
+      } else if (error.code === "unauthenticated") {
+        throw new Error("You must be logged in to add subjects.")
+      } else {
+        throw new Error(`Failed to add subject: ${error.message}`)
+      }
     }
   }
 
@@ -442,10 +494,12 @@ export function AuthProvider({ children }) {
       }
 
       const querySnapshot = await getDocs(q)
-      return querySnapshot.docs.map((doc) => ({
+      const subjects = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }))
+
+      return subjects
     } catch (error) {
       console.error("Error getting subjects:", error)
       return []
