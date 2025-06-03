@@ -85,7 +85,10 @@ export default function TeacherDashboard() {
   const { user, getFeedback, getSubjects } = useAuth()
   const [feedback, setFeedback] = useState([])
   const [subjects, setSubjects] = useState([])
+  const [suggestions, setSuggestions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false)
+  const [suggestionsError, setSuggestionsError] = useState(null)
 
   useEffect(() => {
     const loadFeedback = async () => {
@@ -97,6 +100,11 @@ export default function TeacherDashboard() {
           ])
           setFeedback(feedbackData)
           setSubjects(subjectsData)
+
+          // Fetch suggestions from your model if there's feedback data
+          if (feedbackData.length > 0) {
+            await fetchSuggestions(user.id)
+          }
         } catch (error) {
           console.error("Error loading feedback:", error)
         } finally {
@@ -107,6 +115,111 @@ export default function TeacherDashboard() {
 
     loadFeedback()
   }, [user, getFeedback, getSubjects])
+
+  // Update the fetchSuggestions function to match your Flask API endpoints
+  const fetchSuggestions = async (teacherId) => {
+    setSuggestionsLoading(true)
+    setSuggestionsError(null)
+
+    try {
+      console.log("Fetching suggestions for teacher:", teacherId)
+
+      // Get the API endpoint from environment variable or use default
+      const apiEndpoint = process.env.NEXT_PUBLIC_MODEL_API_ENDPOINT || "http://localhost:5000"
+      console.log("Using API endpoint:", apiEndpoint)
+
+      // First, send the feedback data to your model
+      const feedbackData = feedback.length > 0 ? feedback : await getFeedback({ teacherId })
+      console.log("Feedback data to send:", feedbackData.length, "entries")
+
+      // Send data to your model for analysis
+      console.log("Sending POST request to:", `${apiEndpoint}/classify_feedbacks`)
+      const analysisResponse = await fetch(`${apiEndpoint}/classify_feedbacks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teacher_id: teacherId,
+          feedback_data: feedbackData,
+          subjects_data: subjects,
+        }),
+      })
+
+      console.log("Analysis response status:", analysisResponse.status)
+
+      if (!analysisResponse.ok) {
+        throw new Error(`Analysis API error: ${analysisResponse.status} ${analysisResponse.statusText}`)
+      }
+
+      const analysisResult = await analysisResponse.json()
+      console.log("Analysis result:", analysisResult)
+
+      // Then fetch the suggestions
+      console.log("Sending GET request to:", `${apiEndpoint}/suggest_improvements/${teacherId}`)
+      const suggestionsResponse = await fetch(`${apiEndpoint}/suggest_improvements/${teacherId}`)
+
+      console.log("Suggestions response status:", suggestionsResponse.status)
+
+      if (!suggestionsResponse.ok) {
+        throw new Error(`Suggestions API error: ${suggestionsResponse.status} ${suggestionsResponse.statusText}`)
+      }
+
+      const suggestionsData = await suggestionsResponse.json()
+      console.log("Received suggestions:", suggestionsData)
+
+      // Handle the specific response format from your Flask API
+      if (suggestionsData.suggestions && Array.isArray(suggestionsData.suggestions)) {
+        setSuggestions(suggestionsData.suggestions)
+      } else if (Array.isArray(suggestionsData)) {
+        setSuggestions(suggestionsData)
+      } else {
+        setSuggestions([])
+      }
+    } catch (error) {
+      console.error("Detailed error fetching suggestions:", error)
+      setSuggestionsError(error.message)
+
+      // Fallback to basic suggestions if model is unavailable
+      const fallbackSuggestions = generateFallbackSuggestions()
+      setSuggestions(fallbackSuggestions)
+    } finally {
+      setSuggestionsLoading(false)
+    }
+  }
+
+  const generateFallbackSuggestions = () => {
+    const negativeFeedback = feedback.filter((f) => f.sentiment === "negative").length
+
+    if (negativeFeedback === 0) {
+      return [{ suggestion: "You're doing great! Keep up the good work." }]
+    }
+
+    const suggestions = []
+    const negativeComments = feedback.filter((f) => f.sentiment === "negative").map((f) => f.comment.toLowerCase())
+
+    if (negativeComments.some((c) => c.includes("fast") || c.includes("pace") || c.includes("quick"))) {
+      suggestions.push({
+        suggestion: "Consider slowing down the pace of your lectures to ensure all students can follow along.",
+      })
+    }
+
+    if (negativeComments.some((c) => c.includes("explain") || c.includes("clarity") || c.includes("understand"))) {
+      suggestions.push({
+        suggestion: "Work on explaining complex concepts more clearly, perhaps using more visual aids or examples.",
+      })
+    }
+
+    if (negativeComments.some((c) => c.includes("example") || c.includes("practical"))) {
+      suggestions.push({ suggestion: "Include more practical examples and real-world applications in your teaching." })
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push({ suggestion: "Review your negative feedback comments for specific areas of improvement." })
+    }
+
+    return suggestions
+  }
 
   if (loading) {
     return (
@@ -137,59 +250,6 @@ export default function TeacherDashboard() {
   const recentNeutral = getRecentComments("neutral")
   const recentNegative = getRecentComments("negative")
 
-  // Generate improvement suggestions based on negative feedback
-  // const generateSuggestions = () => {
-  //   if (negativeFeedback === 0) {
-  //     return ["You're doing great! Keep up the good work."]
-  //   }
-
-  //   const suggestions = []
-
-  //   // Check for common themes in negative feedback
-  //   const negativeComments = feedback.filter((f) => f.sentiment === "negative").map((f) => f.comment.toLowerCase())
-
-  //   if (negativeComments.some((c) => c.includes("fast") || c.includes("pace") || c.includes("quick"))) {
-  //     suggestions.push("Consider slowing down the pace of your lectures to ensure all students can follow along.")
-  //   }
-
-  //   if (negativeComments.some((c) => c.includes("explain") || c.includes("clarity") || c.includes("understand"))) {
-  //     suggestions.push("Work on explaining complex concepts more clearly, perhaps using more visual aids or examples.")
-  //   }
-
-  //   if (negativeComments.some((c) => c.includes("example") || c.includes("practical"))) {
-  //     suggestions.push("Include more practical examples and real-world applications in your teaching.")
-  //   }
-
-  //   if (negativeComments.some((c) => c.includes("material") || c.includes("content") || c.includes("outdated"))) {
-  //     suggestions.push("Consider updating your course materials to reflect current industry standards and practices.")
-  //   }
-
-  //   if (suggestions.length === 0) {
-  //     suggestions.push("Review your negative feedback comments for specific areas of improvement.")
-  //   }
-
-  //   return suggestions
-  // }
-
-  // const improvementSuggestions = generateSuggestions()
-
-   const SuggestionsList = ({teacherId}) => {
-    const [suggestions, setSuggestions] = useState([])
-    useEffect(() => {
-      const fetchSuggestions = async () => {
-        try {
-          const response = await fetch(`http://localhost:5000/suggest_improvements/${teacherId}`)
-          const data = await response.json()
-          setSuggestions(data)
-        } catch (error) {
-          console.error("Error fetching suggestions:", error)
-        }
-      }
-
-      fetchSuggestions()
-    }, [teacherId])
-  }
-
   // Group feedback by subject
   const feedbackBySubject = {}
   feedback.forEach((item) => {
@@ -205,12 +265,28 @@ export default function TeacherDashboard() {
 
   return (
     <div className="p-6">
-      <h1 style={{ marginBottom: "1.5rem", fontSize: "1.875rem", fontWeight: "bold" }}>Teacher Dashboard</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <h1 style={{ fontSize: "1.875rem", fontWeight: "bold" }}>Teacher Dashboard</h1>
+        {feedback.length > 0 && (
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <div className={`badge ${suggestionsError ? "badge-negative" : "badge-primary"}`}>
+              {suggestionsLoading ? "AI Analyzing..." : suggestionsError ? "Model Offline" : "AI Analysis Ready"}
+            </div>
+            <button
+              className="btn btn-outline btn-sm"
+              onClick={() => fetchSuggestions(user.id)}
+              disabled={suggestionsLoading}
+            >
+              {suggestionsLoading ? "Loading..." : "Refresh Analysis"}
+            </button>
+          </div>
+        )}
+      </div>
 
       <div style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: "600" }}>Welcome back, {user?.name}</h2>
         <p className="text-muted">
-          This is your dashboard where you can view student feedback and suggestions for improvement.
+          This is your dashboard where you can view student feedback and AI-powered suggestions for improvement.
         </p>
       </div>
 
@@ -281,35 +357,63 @@ export default function TeacherDashboard() {
 
         <div className="card">
           <div className="card-header">
-            <h3 className="card-title">Improvement Suggestions</h3>
-            <p className="card-description">Based on student feedback</p>
+            <h3 className="card-title">{suggestionsError ? "Fallback" : "AI-Powered"} Improvement Suggestions</h3>
+            <p className="card-description">
+              {suggestionsError
+                ? "Basic suggestions (AI model unavailable)"
+                : "Based on AI analysis of student feedback"}
+            </p>
           </div>
           <div className="card-content">
-            <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {suggestions.map((item, index) => (
-                <li key={index} style={{ display: "flex", alignItems: "flex-start" }}>
-                  <span
-                    style={{
-                      marginRight: "0.5rem",
-                      display: "flex",
-                      height: "1.5rem",
-                      width: "1.5rem",
-                      flexShrink: 0,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: "50%",
-                      backgroundColor: "rgba(30, 41, 59, 0.1)",
-                      fontSize: "0.875rem",
-                      fontWeight: "500",
-                      color: "var(--primary)",
-                    }}
-                  >
-                    {index + 1}
-                  </span>
-                  <span>{item.suggesstion}</span>
-                </li>
-              ))}
-            </ul>
+            {suggestionsLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
+                <div className="spinner"></div>
+              </div>
+            ) : suggestions.length > 0 ? (
+              <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {suggestions.slice(0, 5).map((item, index) => (
+                  <li key={index} style={{ display: "flex", alignItems: "flex-start" }}>
+                    <span
+                      style={{
+                        marginRight: "0.5rem",
+                        display: "flex",
+                        height: "1.5rem",
+                        width: "1.5rem",
+                        flexShrink: 0,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "50%",
+                        backgroundColor: suggestionsError ? "rgba(30, 41, 59, 0.1)" : "#3b82f6",
+                        fontSize: "0.875rem",
+                        fontWeight: "500",
+                        color: suggestionsError ? "var(--primary)" : "white",
+                      }}
+                    >
+                      {index + 1}
+                    </span>
+                    <span>{item.suggestion || item.suggesstion || item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted">No suggestions available. Add more feedback to get AI-powered insights.</p>
+            )}
+
+            {suggestionsError && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "0.75rem",
+                  backgroundColor: "#fef2f2",
+                  borderRadius: "0.375rem",
+                  fontSize: "0.875rem",
+                  color: "#991b1b",
+                }}
+              >
+                <strong>Note:</strong> AI model is currently unavailable. Showing basic suggestions based on feedback
+                patterns.
+              </div>
+            )}
           </div>
         </div>
       </div>

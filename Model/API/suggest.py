@@ -6,9 +6,11 @@ import torch
 import torch.nn.functional as F
 import ollama # type: ignore
 import json
+from flask_cors import CORS # type: ignore
 
 # Flask Setup 
 app = Flask(__name__)
+CORS(app, origins=["http://localhost:3000"])
 
 # Firebase Setup
 cred = credentials.Certificate("./student-review.json")
@@ -91,7 +93,7 @@ Respond ONLY with valid JSON (no extra text)."""
 def home():
     return 'Student Review Suggestion API is running.'
 
-@app.route("/classify_feedbacks", methods=["PUT"])
+@app.route("/classify_feedbacks", methods=["POST"])
 def classify_feedbacks():
     """
     Re-classify all feedbacks and optionally update their sentiment in Firestore.
