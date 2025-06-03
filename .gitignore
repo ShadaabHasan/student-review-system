@@ -5,7 +5,7 @@ Model/initialModel/
 Model/results/
 Model/bert-results/
 Model/glove/
-
+Model/API/student-review.json
 
 # Ignore all model weights formats (common ML formats)
 *.h5
